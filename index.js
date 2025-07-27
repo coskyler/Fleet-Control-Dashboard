@@ -16,7 +16,7 @@ app.use(
     secret: process.env.SESSION_SIGNATURE,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, maxAge: 86400000 } // 1 day
+    cookie: { secure: false, maxAge: 60000 } // 1 minute
   })
 );
 
