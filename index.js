@@ -10,6 +10,12 @@ const PORT = 3000;
 const redisClient = createClient({url: 'redis://localhost:6379'});
 redisClient.connect().catch(console.error);
 
+const http = require('http');
+const { WebSocketServer } = require('ws');
+
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
+
 app.use(express.json());
 
 app.use(
@@ -99,31 +105,41 @@ app.post('/connect-unity-session', async (req, res) => {
   }
 })
 
-app.post('/create-unity-session', async (req, res) => {
-  const { unitySessionId } = req.body;
-
-  const sessionData = {
-    unitySessionId,
-    webSessionId: null,
-    scanStart: null,
-    voxelMap: [],
-    drones: [],
-    status: 'inactive'
-  }
-
-  try {
-    await redisClient.set(`unity:${unitySessionId}`, JSON.stringify(sessionData), { EX: 600 });
-    res.send('Session created');
-  } catch (err) {
-    console.log('Redis Unity session error:', err);
-    res.status(500).send('Error creating session');
-  }
-})
-
 app.get('/', (req, res) => {
   res.send('Backend is running!');
 });
 
-app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
+wss.on('connection', async (ws) => {
+  ws.on('message', async (msg) => {
+    const data = JSON.parse(msg);
+
+    if(data.type == 'init-unity') {
+      const unitySessionId = data.sessionID;
+
+      ws.sessionType = 'unity';
+      ws.sessionID = unitySessionId;
+
+      const sessionData = {
+        unitySessionId,
+        webSessionId: null,
+        scanStart: null,
+        voxelMap: [],
+        drones: [],
+        status: 'active'
+      }
+
+      try {
+        await redisClient.set(`unity:${unitySessionId}`, JSON.stringify(sessionData), { EX: 600 });
+        ws.send(JSON.stringify({type: 'session-created', success: true}));
+      } catch (err) {
+        console.log('Redis Unity session error:', err);
+        ws.send(JSON.stringify({type: 'session-created', success: false}));
+        ws.close(4000, 'Failed to create session');
+      }
+    }
+  })
+})
+
+server.listen(PORT, () => {
+  console.log(`HTTP and WS Server listening on http://localhost:${PORT}`);
 });
