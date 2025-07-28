@@ -63,7 +63,7 @@ app.post('/logout', async (req, res) => {
 app.post('/register', async (req, res) => {
   const { username, password } = req.body;
   try {
-    await pool.query('INSERT INTO users (username, password) VALUES ($1, $2)', [username, password]);
+    const result = await pool.query('INSERT INTO users (username, password) VALUES ($1, $2)', [username, password]);
     req.session.user = { id: result.rows[0].id, username };
     res.send('Account created');
   } catch (err) {
