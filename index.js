@@ -16,17 +16,41 @@ const { WebSocketServer } = require('ws');
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
+const unityClients = new Map();
+const browserClients = new Map();
+
 app.use(express.json());
 
-app.use(
-  session({
-    store: new RedisStore({ client: redisClient }),
-    secret: process.env.SESSION_SIGNATURE,
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false, maxAge: 60000 } // 1 minute
+const sessionMiddleware =  session({
+  store: new RedisStore({ client: redisClient }),
+  secret: process.env.SESSION_SIGNATURE,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false, maxAge: 60000 } // 1 minute
+})
+
+app.use(sessionMiddleware);
+
+server.on('upgrade', (req, socket, head) => {
+  if(req.url.includes('/unity')) {
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit('connection', ws, req);
+    })
+    return;
+  }
+
+  sessionMiddleware(req, {}, () => {
+    if(!req.session) {
+      socket.destroy();
+      return;
+    }
+
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      ws.session = req.session;
+      wss.emit('connection', ws, req);
+    })
   })
-);
+})
 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
@@ -45,16 +69,6 @@ app.post('/login', async (req, res) => {
 })
 
 app.post('/logout', async (req, res) => {
-  const unitySessionId = req.session.unitySessionId;
-  if(unitySessionId) {
-    try {
-      await redisClient.del(`unity:${unitySessionId}`);
-    } catch (err) {
-      console.log('Logout session deletion error:', err);
-      return res.send('Logout failed');
-    }
-  }
-
   req.session.destroy(err => {
     if (err) {
       console.log('Logout error:', err);
@@ -82,60 +96,99 @@ app.post('/register', async (req, res) => {
   }
 })
 
-app.post('/connect-unity-session', async (req, res) => {
-  const { unitySessionId } = req.body;
-
-  try {
-    const data = await redisClient.get(`unity:${unitySessionId}`);
-    if(!data) return res.status(404).send('Session not found');
-
-    const unitySession = JSON.parse(data);
-
-    if(unitySession.webSessionId != null) return res.status(409).send('Unity session linked to different browser');
-
-    req.session.unitySessionId = unitySessionId; //assign unitySessionId in browser cookie
-
-    unitySession.webSessionId = req.sessionID;
-    await redisClient.set(`unity:${unitySessionId}`, JSON.stringify(unitySession), { EX: 600 });
-
-    res.send('Unity session linked');
-  } catch (err) {
-    console.log('Error linking unity session:', err);
-    res.status(500).send('Server error');
-  }
-})
-
 app.get('/', (req, res) => {
   res.send('Backend is running!');
 });
 
-wss.on('connection', async (ws) => {
-  ws.on('message', async (msg) => {
-    const data = JSON.parse(msg);
+wss.on('connection', (ws, req) => {
+  //browser websocket
+  if (req.session) {
 
-    if(data.type == 'init-unity') {
-      const unitySessionId = data.sessionID;
-
-      ws.sessionType = 'unity';
-      ws.sessionID = unitySessionId;
-
-      const sessionData = {
-        unitySessionId,
-        webSessionId: null,
-        scanStart: null,
-        voxelMap: [],
-        drones: [],
-        status: 'active'
-      }
-
+    ws.on('message', (msg) => {
+      let data;
       try {
-        await redisClient.set(`unity:${unitySessionId}`, JSON.stringify(sessionData), { EX: 600 });
-        ws.send(JSON.stringify({type: 'session-created', success: true}));
-      } catch (err) {
-        console.log('Redis Unity session error:', err);
-        ws.send(JSON.stringify({type: 'session-created', success: false}));
-        ws.close(4000, 'Failed to create session');
+        data = JSON.parse(msg);
+      } catch (e) {
+        ws.close(1003, 'Invalid JSON');
+        return;
       }
+
+      switch (data.type) {
+        case 'init-browser': {
+          const { unitySessionId } = data;
+
+          ws.sessionID = req.session.id;
+          ws.sessionType = 'browser';
+
+          if( !unityClients.has(unitySessionId) ) {
+            ws.send(JSON.stringify({type: 'session-created', success: false}));
+            ws.close(4001, 'Unity session not found');
+            return;
+          }
+          
+          const unityWs = unityClients.get(unitySessionId);
+
+          if(unityWs.browserSessionId) {
+            ws.send(JSON.stringify({type: 'session-created', success: false}));
+            ws.close(4002, 'Unity session already linked');
+            return;
+          }
+          
+          unityWs.browserSessionId = ws.sessionID;
+
+          const scanData = {
+            unitySessionId,
+            scanStart: null,
+            voxelMap: [],
+            drones: [],
+            status: 'active'
+          }
+
+          req.session.scanData = scanData;
+
+          req.session.save(err => {
+            if (err) console.error('WebSocket session save failed:', err);
+          });
+
+          browserClients.set(ws.sessionID, ws);
+        }
+      }
+    })
+
+  //unity websocket
+  } else {
+    ws.on('message', (msg) => {
+      let data;
+      try {
+        data = JSON.parse(msg);
+      } catch (e) {
+        ws.close(1003, 'Invalid JSON');
+        return;
+      }
+
+      switch (data.type) {
+        case 'init-unity': {
+          //generate session id
+          let unitySessionId;
+          do {
+            unitySessionId = generateUnitySessionId();
+          } while(unityClients.has(unitySessionId));
+
+          ws.sessionID = unitySessionId;
+          ws.sessionType = 'unity';
+
+          unityClients.set(unitySessionId, ws);
+          ws.send(JSON.stringify({type: 'session-created', sessionID: unitySessionId, success: true}));
+        }
+      }
+    })
+  }
+
+  ws.on('close', () => {
+    if (ws.sessionType == 'browser') {
+      browserClients.delete(ws.sessionID);
+    } else if (ws.sessionType == 'unity') {
+      unityClients.delete(ws.sessionID);
     }
   })
 })
@@ -143,3 +196,12 @@ wss.on('connection', async (ws) => {
 server.listen(PORT, () => {
   console.log(`HTTP and WS Server listening on http://localhost:${PORT}`);
 });
+
+function generateUnitySessionId(length = 5) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let id = '';
+  for (let i = 0; i < length; i++) {
+    id += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return id;
+}
