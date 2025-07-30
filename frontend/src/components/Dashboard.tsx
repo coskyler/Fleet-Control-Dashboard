@@ -1,6 +1,6 @@
 export default function Dashboard() {
     return  (
-        <main className="flex-1 flex flex-col bg-neutral-800 p-6 text-white">
+        <main className="h-full flex flex-col bg-neutral-800 p-6 text-white">
             <h1 className="text-xl font-bold mb-4">New Scan</h1>
             
             <section className="flex-1 flex">
