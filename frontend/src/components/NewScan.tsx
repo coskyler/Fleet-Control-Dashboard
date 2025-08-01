@@ -21,6 +21,10 @@ export default function NewScan() {
             .slice(0, 5);                   //limit to 5 chars
     }
 
+    const connectWebsocket = () => {
+        
+    }
+
     return(
         <main className="h-full flex flex-col justify-center items-center bg-neutral-800 p-6 text-white">
             <h1 className="text-3xl mb-8">Create New Scan</h1>
@@ -50,7 +54,7 @@ export default function NewScan() {
                     />
                 </div>
             </div>
-            <button className={`mb-6 bg-neutral-200 p-2 rounded-xl mt-6 text-black font-semibold hover:bg-neutral-400 transition duration-100 active:bg-neutral-200 ${unityCode.length === 5 ? "visible" : "invisible"}`}>Connect</button>
+            <button onClick={connectWebsocket} className={`mb-6 bg-neutral-200 p-2 rounded-xl mt-6 text-black font-semibold hover:bg-neutral-400 transition duration-100 active:bg-neutral-200 ${unityCode.length === 5 ? "visible" : "invisible"}`}>Connect</button>
         </main>
     );
 }
