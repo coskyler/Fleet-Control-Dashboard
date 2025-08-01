@@ -2,6 +2,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import NewScan from './components/NewScan';
+import Scans from './components/Scans';
 
 function App() {
   const location = useLocation();
@@ -15,6 +16,7 @@ function App() {
         <Routes>
           <Route path="/dashboard" element = {<Dashboard />} />
           <Route path="/newscan" element = {<NewScan />} />
+          <Route path="/scans/:scanname" element = {<Scans />} />
         </Routes>
       </div>
     </div>
