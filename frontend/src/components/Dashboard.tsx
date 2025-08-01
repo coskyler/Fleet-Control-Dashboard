@@ -1,3 +1,5 @@
+import ScanRenderer from './ScanRenderer';
+
 export default function Dashboard() {
     return  (
         <main className="h-full flex flex-col bg-neutral-800 p-6 text-white">
@@ -5,10 +7,10 @@ export default function Dashboard() {
             
             <section className="flex-1 flex">
                 <aside className="w-64 bg-neutral-700 rounded-xl mr-2">
-
+                    
                 </aside>
                 <div className="flex-1 bg-neutral-700 rounded-xl">
-                    
+                    <ScanRenderer />
                 </div>
             </section>
 

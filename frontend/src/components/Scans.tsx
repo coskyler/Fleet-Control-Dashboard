@@ -1,4 +1,4 @@
-export default function Dashboard() {
+export default function Scans() {
     return  (
         <main className="h-full flex flex-col bg-neutral-800 p-6 text-white">
             <section className="flex justify-between items-end">
