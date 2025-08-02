@@ -1,4 +1,4 @@
-import { createContext, useRef, useState, type ReactNode } from 'react';
+import { createContext, useRef, type ReactNode } from 'react';
 
 type WebSocketContextType = {
     ws: WebSocket | null
