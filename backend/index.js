@@ -109,52 +109,112 @@ wss.on('connection', (ws, req) => {
       try {
         data = validateMsg(msg);
       } catch (e) {
-        ws.close(1003, 'Invalid data');
+        closeWebsocketPair(ws, 1003, 'Invalid data');
         return;
       }
 
       switch (data.type) {
         case 'init-browser': {
           const { unitySessionId } = data;
-
+          
+          //assign identifiers
           ws.sessionID = ws.session.id;
           ws.sessionType = 'browser';
 
+          //close if no unity id is sent
           if( !unityClients.has(unitySessionId) ) {
             ws.send(JSON.stringify({type: 'session-created', success: false}));
-            ws.close(4001, 'Unity session not found');
+            closeWebsocketPair(ws, 4001, 'Unity session not found');
             return;
           }
           
           const unityWs = unityClients.get(unitySessionId);
 
+          //close if the unity id is already linked with a browser session
           if(unityWs.browserSessionId) {
             ws.send(JSON.stringify({type: 'session-created', success: false}));
-            ws.close(4002, 'Unity session already linked');
+            closeWebsocketPair(ws, 4002, 'Unity session already linked');
             return;
           }
 
           const scanData = {
             scanStart: null,
+            scanEnd: null,
             voxelMap: [],
             drones: [],
-            status: 'active'
+            status: 'pending'
           }
 
           ws.session.scanData = scanData;
           ws.session.unitySessionId = unitySessionId;
 
+          //close if redis fails to save
           ws.session.save(err => {
             if (err) {
               console.error('WebSocket session save failed:', err);
-              ws.close(4003, 'Failed saving session to redis');
+              closeWebsocketPair(ws, 4003, 'Failed saving session to redis');
               return;
             };
           });
 
           browserClients.set(ws.sessionID, ws);
           unityWs.browserSessionId = ws.sessionID;
-          unityWs.send(JSON.stringify({type: 'session-linked', success: true}))
+          unityWs.send(JSON.stringify({type: 'session-linked', success: true}));
+        }
+
+        case 'startScan': {
+          if(!ws.session || !ws.session.scanData || ws.session.scanData.status !== 'pending' || ws.session.unitySessionId === undefined) break;
+          
+          const unityWs = unityClients.get(ws.session.unitySessionId)
+          if(!unityWs || unityWs.readyState !== ws.OPEN) {
+            closeWebsocketPair(ws, 4004, "Unity websocket closed");
+            return;
+          }
+
+          ws.session.scanData.status = 'started';
+          ws.session.scanData.scanStart = Date.now();
+
+          ws.session.save(err => {
+            if (err) {
+              console.error('WebSocket session save failed:', err);
+              ws.send(JSON.stringify({type: 'startScan', success: false}));
+              closeWebsocketPair(ws, 4003, "Websocket session save failed");
+            } else {
+              ws.send(JSON.stringify({type: 'startScan', success: true}));
+            }
+          });
+        }
+
+        case 'endScan': {
+          if(!ws.session || !ws.session.scanData || ws.session.scanData.status === 'pending' || ws.session.unitySessionId === undefined) break;
+          
+          ws.session.scanData.status = 'ended';
+          ws.session.scanData.scanEnd = Date.now();
+
+          const unityWs = unityClients.get(ws.session.unitySessionId)
+          if(!unityWs || unityWs.readyState !== ws.OPEN) {
+            closeWebsocketPair(ws, 4004, "Unity websocket closed");
+            return;
+          }
+
+          ws.session.save(err => {
+            if (err) {
+              console.error('WebSocket session save failed:', err);
+              ws.send(JSON.stringify({type: 'endScan', success: false}));
+            } else {
+              ws.send(JSON.stringify({type: 'endScan', success: true}));
+            }
+
+            closeWebsocketPair(ws, 1000, "Scan ended");
+          });
+        }
+
+        case 'dispatch': {
+
+        }
+
+        case 'recall': {
+
         }
       }
     })
@@ -166,7 +226,7 @@ wss.on('connection', (ws, req) => {
       try {
         data = validateMsg(msg);
       } catch (e) {
-        ws.close(1003, 'Invalid data');
+        closeWebsocketPair(ws, 1003, 'Invalid data')
         return;
       }
 
@@ -177,7 +237,8 @@ wss.on('connection', (ws, req) => {
           do {
             unitySessionId = generateUnitySessionId();
           } while(unityClients.has(unitySessionId));
-
+          
+          //assign identifiers
           ws.sessionID = unitySessionId;
           ws.sessionType = 'unity';
 
@@ -189,8 +250,15 @@ wss.on('connection', (ws, req) => {
   }
 
   ws.on('close', () => {
-    closeWebsocketPair(ws, 1000, "Normal close");
-  })
+    if(ws.sessionType === undefined) return;
+
+    if (ws.sessionType === 'browser') {
+      browserClients.delete(ws.sessionID);
+    } else if (ws.sessionType === 'unity') {
+      unityClients.delete(ws.sessionID);
+    }
+  });
+
 })
 
 server.listen(PORT, () => {
@@ -210,18 +278,23 @@ function validateMsg(msg) {
   const data = JSON.parse(msg);
   let reqFields = {};
 
-  if(data.type === undefined) throw new Error('Missing required field: type');
+  if(data.type === undefined || typeof data.type !== 'string') throw new Error('Missing required field: type');
   reqFields.type = data.type;
 
   const requireByFields = {
     'init-browser': {
       unitySessionId: 'string'
     },
-    'init-unity': {}
+    'startScan': {},
+    'endScan': {},
+    'dispatch': {},
+    'recall': {},
+
+    'init-unity': {},
   }
 
   const requiredKeys = requireByFields[data.type];
-  if(!requiredKeys) {
+  if(requiredKeys === undefined) {
     const err = new Error(`Invalid message type: ${data.type}`);
     err.code = 1007;
     throw err;
@@ -247,8 +320,6 @@ function closeWebsocketPair(ws, code, msg) {
   }
 
   if(ws.sessionType === 'browser') {
-    if(ws.sessionID) browserClients.delete(ws.sessionID);
-
     if(!ws.session) {
       ws.close(code, msg);
       return;
@@ -260,7 +331,6 @@ function closeWebsocketPair(ws, code, msg) {
         let unityClient = unityClients.get(unitySessionId);
         if(unityClient.readyState === ws.OPEN)
           unityClient.close(code, msg);
-        unityClients.delete(unitySessionId);
       }
 
       delete ws.session.unitySessionId;
@@ -268,28 +338,22 @@ function closeWebsocketPair(ws, code, msg) {
         if (err) console.error('WebSocket session save failed:', err);
       });
     }
-
-    ws.close(code, msg);
   }
 
   else if(ws.sessionType === 'unity') {
-    if(ws.sessionID) unityClients.delete(ws.sessionID);
-
     const browserSessionId = ws.browserSessionId;
     if(browserSessionId) {
       if(browserClients.has(browserSessionId)) {
         let browserClient = browserClients.get(browserSessionId);
         if(browserClient.readyState === ws.OPEN)
           browserClient.close(code, msg);
-        browserClients.delete(browserSessionId);
       }
     }
-
-    ws.close(code, msg);
   }
 
   else {
     console.error('Closing unknown websocket');
-    ws.close(code, msg);
   }
+
+  ws.close(code, msg);
 }
