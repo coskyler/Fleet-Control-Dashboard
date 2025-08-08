@@ -63,7 +63,7 @@ app.post('/login', async (req, res) => {
       res.status(401).send("Invalid username or password");
     } 
   } catch(err) {
-    console.log("Login error:", err);
+    console.error("Login error:", err);
     res.status(500).send('Server error');
   }
 })
@@ -71,7 +71,7 @@ app.post('/login', async (req, res) => {
 app.post('/logout', async (req, res) => {
   req.session.destroy(err => {
     if (err) {
-      console.log('Logout error:', err);
+      console.error('Logout error:', err);
       return res.status(500).send('Logout failed');
     }
 
@@ -90,7 +90,7 @@ app.post('/register', async (req, res) => {
     if (err.code == '23505') {
       res.status(409).send('Username already exists');
     } else {
-      console.log('Registration error:', err);
+      console.error('Registration error:', err);
       res.status(500).send('Server error');
     }
   }
@@ -102,14 +102,14 @@ app.get('/', (req, res) => {
 
 wss.on('connection', (ws, req) => {
   //browser websocket
-  if (req.session) {
+  if (ws.session) {
 
     ws.on('message', (msg) => {
       let data;
       try {
-        data = JSON.parse(msg);
+        data = validateMsg(msg);
       } catch (e) {
-        ws.close(1003, 'Invalid JSON');
+        ws.close(1003, 'Invalid data');
         return;
       }
 
@@ -117,7 +117,7 @@ wss.on('connection', (ws, req) => {
         case 'init-browser': {
           const { unitySessionId } = data;
 
-          ws.sessionID = req.session.id;
+          ws.sessionID = ws.session.id;
           ws.sessionType = 'browser';
 
           if( !unityClients.has(unitySessionId) ) {
@@ -133,24 +133,28 @@ wss.on('connection', (ws, req) => {
             ws.close(4002, 'Unity session already linked');
             return;
           }
-          
-          unityWs.browserSessionId = ws.sessionID;
 
           const scanData = {
-            unitySessionId,
             scanStart: null,
             voxelMap: [],
             drones: [],
             status: 'active'
           }
 
-          req.session.scanData = scanData;
+          ws.session.scanData = scanData;
+          ws.session.unitySessionId = unitySessionId;
 
-          req.session.save(err => {
-            if (err) console.error('WebSocket session save failed:', err);
+          ws.session.save(err => {
+            if (err) {
+              console.error('WebSocket session save failed:', err);
+              ws.close(4003, 'Failed saving session to redis');
+              return;
+            };
           });
 
           browserClients.set(ws.sessionID, ws);
+          unityWs.browserSessionId = ws.sessionID;
+          unityWs.send(JSON.stringify({type: 'session-linked', success: true}))
         }
       }
     })
@@ -160,9 +164,9 @@ wss.on('connection', (ws, req) => {
     ws.on('message', (msg) => {
       let data;
       try {
-        data = JSON.parse(msg);
+        data = validateMsg(msg);
       } catch (e) {
-        ws.close(1003, 'Invalid JSON');
+        ws.close(1003, 'Invalid data');
         return;
       }
 
@@ -185,11 +189,7 @@ wss.on('connection', (ws, req) => {
   }
 
   ws.on('close', () => {
-    if (ws.sessionType == 'browser') {
-      browserClients.delete(ws.sessionID);
-    } else if (ws.sessionType == 'unity') {
-      unityClients.delete(ws.sessionID);
-    }
+    closeWebsocketPair(ws, 1000, "Normal close");
   })
 })
 
@@ -198,10 +198,98 @@ server.listen(PORT, () => {
 });
 
 function generateUnitySessionId(length = 5) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let id = '';
   for (let i = 0; i < length; i++) {
     id += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return id;
+}
+
+function validateMsg(msg) {
+  const data = JSON.parse(msg);
+  let reqFields = {};
+
+  if(data.type === undefined) throw new Error('Missing required field: type');
+  reqFields.type = data.type;
+
+  const requireByFields = {
+    'init-browser': {
+      unitySessionId: 'string'
+    },
+    'init-unity': {}
+  }
+
+  const requiredKeys = requireByFields[data.type];
+  if(!requiredKeys) {
+    const err = new Error(`Invalid message type: ${data.type}`);
+    err.code = 1007;
+    throw err;
+  }
+
+  for(const [key, expectedType] of Object.entries(requiredKeys)) {
+    if(data[key] === undefined || typeof data[key] !== expectedType) {
+      const err = new Error(`Missing required field: ${key}`);
+      err.code = 1007;
+      throw err;
+    }
+
+    reqFields[key] = data[key];
+  }
+
+  return reqFields;
+}
+
+function closeWebsocketPair(ws, code, msg) {
+  if(!ws.sessionType) {
+    ws.close(code, msg);
+    return;
+  }
+
+  if(ws.sessionType === 'browser') {
+    if(ws.sessionID) browserClients.delete(ws.sessionID);
+
+    if(!ws.session) {
+      ws.close(code, msg);
+      return;
+    }
+
+    const unitySessionId = ws.session.unitySessionId;
+    if(unitySessionId) {
+      if(unityClients.has(unitySessionId)) {
+        let unityClient = unityClients.get(unitySessionId);
+        if(unityClient.readyState === ws.OPEN)
+          unityClient.close(code, msg);
+        unityClients.delete(unitySessionId);
+      }
+
+      delete ws.session.unitySessionId;
+      ws.session.save(err => {
+        if (err) console.error('WebSocket session save failed:', err);
+      });
+    }
+
+    ws.close(code, msg);
+  }
+
+  else if(ws.sessionType === 'unity') {
+    if(ws.sessionID) unityClients.delete(ws.sessionID);
+
+    const browserSessionId = ws.browserSessionId;
+    if(browserSessionId) {
+      if(browserClients.has(browserSessionId)) {
+        let browserClient = browserClients.get(browserSessionId);
+        if(browserClient.readyState === ws.OPEN)
+          browserClient.close(code, msg);
+        browserClients.delete(browserSessionId);
+      }
+    }
+
+    ws.close(code, msg);
+  }
+
+  else {
+    console.error('Closing unknown websocket');
+    ws.close(code, msg);
+  }
 }
