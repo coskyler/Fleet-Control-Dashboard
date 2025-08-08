@@ -155,11 +155,12 @@ wss.on('connection', (ws, req) => {
               closeWebsocketPair(ws, 4003, 'Failed saving session to redis');
               return;
             };
+
+            browserClients.set(ws.sessionID, ws);
+            unityWs.browserSessionId = ws.sessionID;
+            unityWs.send(JSON.stringify({type: 'session-linked', success: true}));
           });
 
-          browserClients.set(ws.sessionID, ws);
-          unityWs.browserSessionId = ws.sessionID;
-          unityWs.send(JSON.stringify({type: 'session-linked', success: true}));
           break;
         }
 
