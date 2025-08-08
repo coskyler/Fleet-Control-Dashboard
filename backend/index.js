@@ -160,10 +160,14 @@ wss.on('connection', (ws, req) => {
           browserClients.set(ws.sessionID, ws);
           unityWs.browserSessionId = ws.sessionID;
           unityWs.send(JSON.stringify({type: 'session-linked', success: true}));
+          break;
         }
 
         case 'startScan': {
-          if(!ws.session || !ws.session.scanData || ws.session.scanData.status !== 'pending' || ws.session.unitySessionId === undefined) break;
+          if(!ws.session || 
+            !ws.session.scanData || 
+            ws.session.scanData.status !== 'pending' || 
+            ws.session.unitySessionId === undefined) break;
           
           const unityWs = unityClients.get(ws.session.unitySessionId)
           if(!unityWs || unityWs.readyState !== ws.OPEN) {
@@ -177,16 +181,21 @@ wss.on('connection', (ws, req) => {
           ws.session.save(err => {
             if (err) {
               console.error('WebSocket session save failed:', err);
-              ws.send(JSON.stringify({type: 'startScan', success: false}));
+              unityWs.send(JSON.stringify({type: 'startScan', success: false}));
               closeWebsocketPair(ws, 4003, "Websocket session save failed");
             } else {
-              ws.send(JSON.stringify({type: 'startScan', success: true}));
+              unityWs.send(JSON.stringify({type: 'startScan', success: true}));
             }
           });
+          break;
         }
 
         case 'endScan': {
-          if(!ws.session || !ws.session.scanData || ws.session.scanData.status === 'pending' || ws.session.unitySessionId === undefined) break;
+          if(!ws.session || 
+            !ws.session.scanData || 
+            ws.session.scanData.status === 'pending' || 
+            ws.session.unitySessionId === undefined
+          ) break;
           
           ws.session.scanData.status = 'ended';
           ws.session.scanData.scanEnd = Date.now();
@@ -200,21 +209,68 @@ wss.on('connection', (ws, req) => {
           ws.session.save(err => {
             if (err) {
               console.error('WebSocket session save failed:', err);
-              ws.send(JSON.stringify({type: 'endScan', success: false}));
+              unityWs.send(JSON.stringify({type: 'endScan', success: false}));
             } else {
-              ws.send(JSON.stringify({type: 'endScan', success: true}));
+              unityWs.send(JSON.stringify({type: 'endScan', success: true}));
             }
 
             closeWebsocketPair(ws, 1000, "Scan ended");
           });
+          break;
         }
 
         case 'dispatch': {
+          if(!ws.session || 
+            !ws.session.scanData || 
+            (ws.session.scanData.status !== 'recalled' && ws.session.scanData.status !== 'started') || 
+            ws.session.unitySessionId === undefined
+          ) break;
+          
+          const unityWs = unityClients.get(ws.session.unitySessionId)
+          if(!unityWs || unityWs.readyState !== ws.OPEN) {
+            closeWebsocketPair(ws, 4004, "Unity websocket closed");
+            return;
+          }
 
+          ws.session.scanData.status = 'dispatched';
+
+          ws.session.save(err => {
+            if (err) {
+              console.error('WebSocket session save failed:', err);
+              unityWs.send(JSON.stringify({type: 'dispatch', success: false}));
+              closeWebsocketPair(ws, 4003, "Websocket session save failed");
+            } else {
+              unityWs.send(JSON.stringify({type: 'dispatch', success: true}));
+            }
+          });
+          break;
         }
 
         case 'recall': {
+          if(!ws.session || 
+            !ws.session.scanData || 
+            ws.session.scanData.status !== 'dispatched' || 
+            ws.session.unitySessionId === undefined
+          ) break;
+          
+          const unityWs = unityClients.get(ws.session.unitySessionId)
+          if(!unityWs || unityWs.readyState !== ws.OPEN) {
+            closeWebsocketPair(ws, 4004, "Unity websocket closed");
+            return;
+          }
 
+          ws.session.scanData.status = 'recalled';
+
+          ws.session.save(err => {
+            if (err) {
+              console.error('WebSocket session save failed:', err);
+              unityWs.send(JSON.stringify({type: 'recall', success: false}));
+              closeWebsocketPair(ws, 4003, "Websocket session save failed");
+            } else {
+              unityWs.send(JSON.stringify({type: 'recall', success: true}));
+            }
+          });
+          break;
         }
       }
     })
