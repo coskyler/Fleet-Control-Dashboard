@@ -6,7 +6,7 @@ The system maintains **two WebSocket connections** for real-time interaction bet
 
 🚧 **Status:** In development  
 
-See [link text](https://github.com/coskyler/AIDN-Drone-Navigation)
+See [AIDN – Autonomous Indoor Drone Navigation](https://github.com/coskyler/AIDN-Drone-Navigation)
 
 ## Features
 - User authentication and session handling (Redis)
