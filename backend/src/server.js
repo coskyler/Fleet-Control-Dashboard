@@ -1,6 +1,7 @@
-import express from "express";
+import app from './app.js';
 
-const app = express();
-app.get("/", (req, res) => res.send("Hello World!"));
+app.get('/', (req, res) => {
+    res.send('Hello!!!');
+});
 
-app.listen(80, () => console.log("Container listening on port 80!"));
+app.listen(80, () => console.log("Container listening on port 80!!!"));
