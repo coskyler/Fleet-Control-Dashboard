@@ -1,9 +1,11 @@
 import express from 'express';
 
 import apiRouter from './routes/index.js';
+import sessionMiddleware from './middleware/session.js';
 
 const app = express();
 
+app.use(sessionMiddleware);
 app.use(express.json());
 app.use('/api', apiRouter);
 
