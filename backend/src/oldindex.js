@@ -2,7 +2,7 @@ const express = require('express');
 const session = require('express-session');
 const RedisStore = require('connect-redis').default;
 const { createClient } = require('redis');
-const pool = require('../db');
+const pool = require('./db');
 
 const app = express();
 const PORT = 3000;
