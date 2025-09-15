@@ -1,9 +1,6 @@
 import session from 'express-session';
 import RedisStore from 'connect-redis';
-import { createClient } from 'redis';
-
-const redisClient = createClient({ url: process.env.REDIS_URL });
-redisClient.connect().catch(console.error);
+import redisClient from '../infra/redis.js';
 
 const sessionMiddleware =  session({
   store: new RedisStore({ client: redisClient }),
