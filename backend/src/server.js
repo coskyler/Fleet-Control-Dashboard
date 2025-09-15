@@ -17,11 +17,18 @@ const wrap = (middleware) => (req, res) =>
 
 
 server.on("upgrade", async (req, socket, head) => {
-    const res = new http.ServerResponse(req);
-    res.writeHead = () => {};
-    await wrap(sessionMiddleware)(req, res);
+    if(req.url === "/ws/browser") {
+        const res = new http.ServerResponse(req);
+        res.writeHead = () => {};
+        await wrap(sessionMiddleware)(req, res);
 
-    if(req.url === "/ws/browser") upgradeBrowser(wssBrowser)(req, socket, head);
+        if(!req.session || req.session.isNew) {
+            socket.destroy();
+            return;
+        }
+
+        upgradeBrowser(wssBrowser)(req, socket, head);
+    }
     else if(req.url === "/ws/unity") upgradeUnity(wssUnity)(req, socket, head);
     else socket.destroy();
 });
