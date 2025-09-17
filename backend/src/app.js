@@ -1,10 +1,11 @@
 import express from 'express';
 
 import apiRouter from './routes/index.js';
-import sessionMiddleware from './middleware/session.js';
+import { sessionMiddleware, cors} from './middleware/session.js';
 
 const app = express();
 
+app.use(cors);
 app.use(sessionMiddleware);
 app.use(express.json());
 app.use('/api', apiRouter);

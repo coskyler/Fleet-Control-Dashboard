@@ -24,6 +24,7 @@ server.on("upgrade", async (req, socket, head) => {
 
         if(!req.session || req.session.isNew) {
             socket.destroy();
+            console.log("No session with browser upgrade request");
             return;
         }
 
