@@ -1,11 +1,16 @@
 import app from './app.js';
 import http from 'http';
-import sessionMiddleware from './middleware/session.js';
+import https from 'https';
+import fs from 'fs';
+import { sessionMiddleware } from './middleware/session.js';
 
 import { wssBrowser, upgradeBrowser } from './ws/browser.js';
 import { wssUnity, upgradeUnity } from './ws/unity.js';
 
-const server = http.createServer(app);
+const key  = fs.readFileSync('src/certs/localhost-key.pem');
+const cert = fs.readFileSync('src/certs/localhost.pem');
+
+const server = https.createServer({ key, cert }, app);
 
 const wrap = (middleware) => (req, res) =>
     new Promise((resolve, reject) => {

@@ -9,7 +9,10 @@ function upgradeBrowser(wss) {
         wss.handleUpgrade(req, socket, head, async (ws) => {
             ws.reqSessionID = req.sessionID;
             ws.reqSession = req.session;
-            ws.sessionID = req.headers['sessionid'];
+
+            const params = new URL(req.url, "http://localhost").searchParams;
+            const unityID = params.get("unityID");
+            ws.sessionID = req.headers["unityID="];
 
             if(!(await redisClient.exists(ws.sessionID))) {
                 ws.send("Invalid Unity ID");
