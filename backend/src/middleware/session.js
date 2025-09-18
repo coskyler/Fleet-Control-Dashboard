@@ -6,9 +6,9 @@ const sessionMiddleware =  session({
   store: new RedisStore({ client: redisClient }),
   secret: process.env.SESSION_SIGNATURE,
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   rolling: true,
-  cookie: { secure: false, sameSite: "none", maxAge: 600000 } // 10 minutes
+  cookie: { secure: true, sameSite: "none", maxAge: 600000 } // 10 minutes
 });
 
 const cors = (req, res, next) => {

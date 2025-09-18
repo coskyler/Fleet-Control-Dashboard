@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
+import { WsProvider, WsContext } from '../websocket/ScanWsContext';
 
 export default function NewScan() {
     const [mapName, setMapName] = useState('');
     const [unityCode, setUnityCode] = useState('');
+
+    const wsCtx = useContext(WsContext);
 
     const cleanMapName = (e: React.ChangeEvent<HTMLInputElement>) => {
         const cleaned = e.target.value
@@ -22,7 +25,7 @@ export default function NewScan() {
     }
 
     const connectWebsocket = () => {
-        
+        wsCtx?.openWs(unityCode);
     }
 
     return(

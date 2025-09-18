@@ -20,7 +20,7 @@ type DroneData = {
     orientation: Quaternion;
 }
 
-const WsContext = createContext<WsContextType | null>(null);
+export const WsContext = createContext<WsContextType | null>(null);
 
 export function WsProvider({ children }: { children: ReactNode }) {
     const wsRef = useRef<WebSocket | null>(null);
@@ -33,16 +33,17 @@ export function WsProvider({ children }: { children: ReactNode }) {
     const openWs = (unityCode: string) => {
         console.log("Beep beep attemping to start scan:");
         if (wsRef.current) return "Already Connected";
-        const ws = new WebSocket('ws://localhost:8080');
+        const ws = new WebSocket(`wss://localhost:8080/ws/browser?unityID=${unityCode}`);
         wsRef.current = ws;
         setStatus(true);
         
         ws.onmessage = (event) => {
-            console.log("yoo it works " + event.data);
+            console.log("yoo it works: " + event.data);
         };
 
         ws.onclose = () => {
             wsRef.current = null;
+            console.log("socket closed");
             setStatus(false);
         };
 

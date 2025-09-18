@@ -12,28 +12,21 @@ const cert = fs.readFileSync('src/certs/localhost.pem');
 
 const server = https.createServer({ key, cert }, app);
 
-const wrap = (middleware) => (req, res) =>
-    new Promise((resolve, reject) => {
-        middleware(req, res, (err) => {
-            if (err) reject(err);
-            else resolve();
-        });
-    });
-
-
 server.on("upgrade", async (req, socket, head) => {
-    if(req.url === "/ws/browser") {
-        const res = new http.ServerResponse(req);
-        res.writeHead = () => {};
-        await wrap(sessionMiddleware)(req, res);
-
-        if(!req.session || req.session.isNew) {
-            socket.destroy();
-            console.log("No session with browser upgrade request");
-            return;
-        }
-
-        upgradeBrowser(wssBrowser)(req, socket, head);
+    if(req.url.startsWith("/ws/browser")) {
+        
+        sessionMiddleware(req, {}, () => {
+            console.log("AHHH: " + req.session.isNew);
+            if(!req.session || req.session.isNew) {
+                socket.destroy();
+                console.log("No session with browser upgrade request");
+                socket.destroy();
+                return;
+            } else {
+                console.log(req.session);
+                upgradeBrowser(wssBrowser)(req, socket, head);
+            }
+        });
     }
     else if(req.url === "/ws/unity") upgradeUnity(wssUnity)(req, socket, head);
     else socket.destroy();
