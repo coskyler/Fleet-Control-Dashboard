@@ -6,7 +6,7 @@ const sessionMiddleware =  session({
   store: new RedisStore({ client: redisClient }),
   secret: process.env.SESSION_SIGNATURE,
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,
   rolling: true,
   cookie: { secure: true, sameSite: "none", maxAge: 600000 } // 10 minutes
 });
