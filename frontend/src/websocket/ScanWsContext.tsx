@@ -1,53 +1,128 @@
-import { createContext, useState, useRef, type ReactNode } from 'react';
+import { createContext, useState, useRef, type ReactNode, type RefObject } from 'react';
 import { Vector3, Quaternion } from "three";
 
 type WsContextType = {
-    voxelSize: number;
-    voxels: Vector3[],
-    drones: DroneData[],
-    status: boolean,
-    openWs: (unityID: string, scanName: string) => string;
+    scanName: RefObject<string>,
+    voxelSize: RefObject<number>,
+    voxels: RefObject<Vector3[]>,
+    drones: RefObject<Map<string, DroneData>>,
+    status: RefObject<Status>,
+    tick: number,
+    openWs: (unityID: string, scanName: string) => Promise<string>;
     startScan: () => void,
     dispatch: () => void,
     recall: () => void,
     endScan: () => void
 }
 
+type Status = 'connecting' | 'live' | 'disconnected' | 'completed';
+
 type DroneData = {
-    name: string;
-    pos: Vector3;
-    scale: Vector3;
-    orientation: Quaternion;
+    name: string,
+    pos: Vector3,
+    scale: Vector3,
+    orientation: Quaternion
 }
+
+type IncomingDroneData = {
+  name: string;
+  pos: { x: number; y: number; z: number };
+  scale: { x: number; y: number; z: number };
+  orientation: { x: number; y: number; z: number; w: number };
+};
+
+type IncomingVoxelData = { x: number, y: number, z: number };
+
 
 export const WsContext = createContext<WsContextType | null>(null);
 
 export function WsProvider({ children }: { children: ReactNode }) {
     const wsRef = useRef<WebSocket | null>(null);
 
-    const [voxelSize, setVoxelSize] = useState(1);
-    const [voxels, setVoxels] = useState([]);
-    const [drones, setDrones] = useState([]);
-    const [status, setStatus] = useState(false);
+    const voxelSize = useRef(1);
+    const voxels = useRef<Vector3[]>([]);
+    const drones = useRef<Map<string, DroneData>>(new Map());
+    const status = useRef<Status>('connecting');
+    const scanName = useRef('');
 
-    const openWs = (unityCode: string, scanName: string) => {
+    const [tick, setTick] = useState(0);
+
+    const openWs = async (unityCode: string, newScanName: string) => {
         console.log("Beep beep attemping to start scan:");
-        if (wsRef.current) return "Already Connected";
-        const ws = new WebSocket(`wss://localhost:8080/ws/browser?unityID=${unityCode}&scanName=${scanName}`);
+        if (wsRef.current) {
+            console.log("Already connected to ws. Coconut");
+            return "Already connected";
+        }
+
+        await fetch("https://localhost:8080/", { credentials: "include" });
+        const ws = new WebSocket(`wss://localhost:8080/ws/browser?unityID=${unityCode}&scanName=${newScanName}`);
         wsRef.current = ws;
-        setStatus(true);
         
         ws.onmessage = (event) => {
-            console.log("msg:\n", JSON.parse(event.data));
+            status.current = 'live';
+
+            const data = JSON.parse(event.data);
+            console.log("msg:\n", data);
+
+            if('name' in data) {
+                scanName.current = data.name;
+                voxelSize.current = data.voxelSize;
+
+                data.drones.forEach((droneName: string) => {
+                    const newDroneData: DroneData = {
+                        name: droneName,
+                        pos: new Vector3(0, 0, 0),
+                        scale: new Vector3(0, 0, 0),
+                        orientation: new Quaternion(0, 0, 0, 0)
+                    }
+                    
+                    drones.current.set(droneName, newDroneData)
+                });
+            } else {
+                data.drones.forEach((droneInfo: IncomingDroneData) => {
+                    const convertedPos = new Vector3(droneInfo.pos.x, droneInfo.pos.y, droneInfo.pos.z);
+                    const convertedScale = new Vector3(droneInfo.scale.x, droneInfo.scale.y, droneInfo.scale.z);
+                    const convertedOrientation = new Quaternion(droneInfo.orientation.x, droneInfo.orientation.y, droneInfo.orientation.z, droneInfo.orientation.w);
+
+                    const newDroneData: DroneData = {
+                        name: droneInfo.name,
+                        pos: convertedPos,
+                        scale: convertedScale,
+                        orientation: convertedOrientation
+                    }
+
+                    drones.current.set(droneInfo.name, newDroneData)
+                });
+
+                data.voxels.forEach((voxelInfo: IncomingVoxelData) => {
+                    const convertedPos = new Vector3(voxelInfo.x, voxelInfo.y, voxelInfo.z);
+
+                    voxels.current.push(convertedPos);
+                });
+            }
+
+            setTick(tick + 1);
         };
 
         ws.onclose = (event) => {
             wsRef.current = null;
             console.log("socket closed: " + event.reason);
-            setStatus(false);
+            if(event.reason === 'scan completed') {
+                status.current = 'completed';
+            } else {
+                status.current = 'disconnected';
+            }
+
+            setTick(tick + 1);
         };
 
-        return " ";
+        ws.onerror = (err) => {
+            status.current = 'disconnected';
+            console.log("Ws err:\n", err);
+            setTick(tick + 1);
+        }
+
+        return "Connected";
     }
 
     const startScan = () => console.log("start scan");
@@ -56,7 +131,7 @@ export function WsProvider({ children }: { children: ReactNode }) {
     const endScan = () => console.log("end scan");
 
     return (
-        <WsContext.Provider value={{ voxelSize, voxels, drones, status, openWs, startScan, dispatch, recall, endScan }}>
+        <WsContext.Provider value={{ scanName, voxelSize, voxels, drones, status, tick, openWs, startScan, dispatch, recall, endScan }}>
             {children}
         </WsContext.Provider>
     )
