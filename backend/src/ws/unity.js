@@ -7,9 +7,9 @@ let unitySockets = {};
 function upgradeUnity(wss) {
     return (req, socket, head) => {
         wss.handleUpgrade(req, socket, head, async (ws) => {
-            ws.sessionID = generateUnitySessionId();
-            while(ws.sessionID in unitySockets || await redisClient.exists(ws.sessionID)) ws.sessionID = generateUnitySessionId();
-            unitySockets[ws.sessionID] = ws;
+            ws.unityID = generateUnityID();
+            while(ws.unityID in unitySockets || await redisClient.exists(ws.unityID)) ws.unityID = generateUnityID();
+            unitySockets[ws.unityID] = ws;
 
             wss.emit("connection", ws, req);
         });
@@ -17,7 +17,7 @@ function upgradeUnity(wss) {
 }
 
 wssUnity.on("connection", (ws, req) => {
-    ws.send("Hi Unity!! Your session ID is: " + ws.sessionID);
+    ws.send("Hi Unity!! Your session ID is: " + ws.unityID);
 
     ws.on('message', async (msg) => {
         let data;
@@ -27,28 +27,28 @@ wssUnity.on("connection", (ws, req) => {
             console.error("Invalid JSON from Unity websocket message: " + err);
         }
 
-        await redisClient.xAdd(ws.sessionID, { payload: JSON.stringify(data) });
+        await redisClient.xAdd(ws.unityID, { payload: JSON.stringify(data) });
     })
 
     ws.on('close', () => {
-        delete unitySockets[ws.sessionID];
+        delete unitySockets[ws.unityID];
     });
 });
 
-function closeUnityWs(sessionID) {
-    let ws = unitySockets[sessionID];
+function closeUnityWs(unityID) {
+    let ws = unitySockets[unityID];
 
     if(ws) ws.close();
 }
 
-function sendUnityWs(sessionID, msg) {
-    let ws = unitySockets[sessionID];
+function sendUnityWs(unityID, msg) {
+    let ws = unitySockets[unityID];
     if(!ws || ws.readyState !== ws.OPEN) return;
 
     ws.send(msg);
 }
 
-function generateUnitySessionId(length = 4) {
+function generateUnityID(length = 4) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let id = '';
         for (let i = 0; i < length; i++) {

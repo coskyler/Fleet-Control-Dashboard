@@ -16,28 +16,7 @@ const server = https.createServer({ key, cert }, app);
 const parse = cookieParser(process.env.SESSION_SIGNATURE);
 
 server.on("upgrade", async (req, socket, head) => {
-    if(req.url.startsWith("/ws/browser")) {
-        let sid;
-        parse(req, new http.ServerResponse(req), () => {
-            sid = req.signedCookies?.["connect.sid"];
-        })
-
-        if(sid) {
-            const key = `sess:${sid}`;
-            const hasSession = await redisClient.exists(key);
-            if(hasSession) {
-                console.log(req.session);
-                upgradeBrowser(wssBrowser)(req, socket, head);
-            } else {
-                socket.destroy();
-                console.log("No session with browser upgrade request");
-                return;
-            }
-        } else {
-            socket.destroy();
-            console.log("No cookie");
-        }
-    }
+    if(req.url.startsWith("/ws/browser")) upgradeBrowser(wssBrowser)(req, socket, head);
     else if(req.url === "/ws/unity") upgradeUnity(wssUnity)(req, socket, head);
     else socket.destroy();
 });
