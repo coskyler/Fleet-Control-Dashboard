@@ -1,6 +1,10 @@
 import ScanRenderer from './ScanRenderer';
+import { WsContext } from '../websocket/ScanWsContext';
+import { useContext } from 'react';
 
 export default function Dashboard() {
+    const wsCtx = useContext(WsContext);
+
     return  (
         <main className="h-full flex flex-col bg-neutral-800 p-6 text-white">
             <h1 className="text-3xl mb-4">Untitled Scan</h1>
@@ -10,7 +14,7 @@ export default function Dashboard() {
                     
                 </aside>
                 <div className="flex-1 bg-neutral-700 rounded-xl">
-                    <ScanRenderer />
+                    <ScanRenderer voxelsRef={wsCtx?.voxels}/>
                 </div>
             </section>
 

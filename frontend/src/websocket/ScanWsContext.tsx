@@ -64,6 +64,8 @@ export function WsProvider({ children }: { children: ReactNode }) {
             const data = JSON.parse(event.data);
             console.log("msg:\n", data);
 
+            if(!('drones' in data)) return;
+
             if('name' in data) {
                 scanName.current = data.name;
                 voxelSize.current = data.voxelSize;

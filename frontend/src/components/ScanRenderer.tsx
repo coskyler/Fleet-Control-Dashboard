@@ -1,7 +1,16 @@
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, Instances, Instance } from '@react-three/drei';
+import { Vector3, Quaternion } from "three";
 
-export default function ScanRenderer() {
+type RenderProps = {
+    voxelsRef?: React.RefObject<Vector3[]>,
+    dronesRef?: React.RefObject<Vector3[]>
+};
+
+export default function ScanRenderer(props: RenderProps) {
+    const voxelsRef = props.voxelsRef;
+    const voxels = voxelsRef?.current;
+
     return (
         <Canvas style={{ width: '100%', height: '100%'}}>
             <ambientLight intensity={.5} />
@@ -12,6 +21,15 @@ export default function ScanRenderer() {
                 <boxGeometry />
                 <meshStandardMaterial color="red" />
             </mesh>
+
+            <Instances>
+                <boxGeometry args={[1, 1, 1]} />
+                <meshStandardMaterial color="red" />
+                {voxels?.map((pos, i) => (
+                    <Instance key={i} position={[pos.x, pos.y, pos.z]} />
+                ))}
+            </Instances>
+
             <OrbitControls />
             
         </Canvas>

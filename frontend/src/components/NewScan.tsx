@@ -1,11 +1,14 @@
-import { useState, useContext } from 'react';
-import { WsProvider, WsContext } from '../websocket/ScanWsContext';
+import { useState, useContext, useEffect } from 'react';
+import { WsContext } from '../websocket/ScanWsContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function NewScan() {
     const [mapName, setMapName] = useState('');
     const [unityCode, setUnityCode] = useState('');
 
     const wsCtx = useContext(WsContext);
+    
+    const navigate = useNavigate();
 
     const cleanMapName = (e: React.ChangeEvent<HTMLInputElement>) => {
         const cleaned = e.target.value
@@ -24,9 +27,19 @@ export default function NewScan() {
             .slice(0, 5);                   //limit to 5 chars
     }
 
-    const connectWebsocket = () => {
-        wsCtx?.openWs(unityCode, mapName);
+    const connectWebsocket = async () => {
+        const connection: string | undefined = await wsCtx?.openWs(unityCode, mapName);
+        if(connection !== 'Connected') {
+            console.log('connection err:\n', connection);
+            return;
+        }
     }
+
+    useEffect(() => {
+        if(wsCtx?.status.current === 'live') {
+            navigate("/dashboard");
+        }
+    }, [wsCtx]);
 
     return(
         <main className="h-full flex flex-col justify-center items-center bg-neutral-800 p-6 text-white">
