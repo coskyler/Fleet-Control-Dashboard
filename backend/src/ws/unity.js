@@ -9,6 +9,19 @@ function upgradeUnity(wss) {
         wss.handleUpgrade(req, socket, head, async (ws) => {
             ws.unityID = generateUnityID();
             while(ws.unityID in unitySockets || await redisClient.exists(ws.unityID)) ws.unityID = generateUnityID();
+
+            const params = new URL(req.url, "http://localhost").searchParams;
+
+            scanInfo = {
+                "voxelSize": params.get("voxelSize"),
+                "startTime": params.get("startTime"),
+                "drones": params.getAll("drone"),
+                "name": null,
+                "owner": null
+            };
+
+            await redisClient.set('info:' + ws.unityID, JSON.stringify(scanInfo));
+
             unitySockets[ws.unityID] = ws;
 
             wss.emit("connection", ws, req);
