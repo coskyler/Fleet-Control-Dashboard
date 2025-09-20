@@ -6,7 +6,7 @@ type WsContextType = {
     voxels: Vector3[],
     drones: DroneData[],
     status: boolean,
-    openWs: (unityID: string) => string;
+    openWs: (unityID: string, scanName: string) => string;
     startScan: () => void,
     dispatch: () => void,
     recall: () => void,
@@ -30,20 +30,20 @@ export function WsProvider({ children }: { children: ReactNode }) {
     const [drones, setDrones] = useState([]);
     const [status, setStatus] = useState(false);
 
-    const openWs = (unityCode: string) => {
+    const openWs = (unityCode: string, scanName: string) => {
         console.log("Beep beep attemping to start scan:");
         if (wsRef.current) return "Already Connected";
-        const ws = new WebSocket(`wss://localhost:8080/ws/browser?unityID=${unityCode}`);
+        const ws = new WebSocket(`wss://localhost:8080/ws/browser?unityID=${unityCode}&scanName=${scanName}`);
         wsRef.current = ws;
         setStatus(true);
         
         ws.onmessage = (event) => {
-            console.log("yoo it works: " + event.data);
+            console.log("msg:\n", JSON.parse(event.data));
         };
 
-        ws.onclose = () => {
+        ws.onclose = (event) => {
             wsRef.current = null;
-            console.log("socket closed");
+            console.log("socket closed: " + event.reason);
             setStatus(false);
         };
 

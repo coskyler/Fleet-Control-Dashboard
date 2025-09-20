@@ -12,7 +12,7 @@ function upgradeUnity(wss) {
 
             const params = new URL(req.url, "http://localhost").searchParams;
 
-            scanInfo = {
+            const scanInfo = {
                 "voxelSize": params.get("voxelSize"),
                 "startTime": params.get("startTime"),
                 "drones": params.getAll("drone"),
@@ -40,7 +40,7 @@ wssUnity.on("connection", (ws, req) => {
             console.error("Invalid JSON from Unity websocket message: " + err);
         }
 
-        await redisClient.xAdd(ws.unityID, { payload: JSON.stringify(data) });
+        await redisClient.xAdd(ws.unityID, '*', { payload: JSON.stringify(data) });
     })
 
     ws.on('close', () => {
@@ -61,7 +61,7 @@ function sendUnityWs(unityID, msg) {
     ws.send(msg);
 }
 
-function generateUnityID(length = 4) {
+function generateUnityID(length = 5) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let id = '';
         for (let i = 0; i < length; i++) {

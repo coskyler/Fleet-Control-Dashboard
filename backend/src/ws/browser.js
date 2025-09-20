@@ -37,7 +37,7 @@ function upgradeBrowser(wss) {
             const unityID = params.get("unityID");
             const scanName =  params.get("scanName");
 
-            const scanInfoStr = await redisClient.get('info:' + UnityID);
+            const scanInfoStr = await redisClient.get('info:' + unityID);
             const scanInfo = scanInfoStr ? JSON.parse(scanInfoStr) : null;
 
             if(!scanInfo) {
@@ -60,10 +60,10 @@ function upgradeBrowser(wss) {
             }
 
             //say hi :D
-            ws.send("Hi browser!");
+            ws.send(JSON.stringify({"Greeting: ": "Hi " + sessionID + "!"}));
 
             //send scan info and map history
-            ws.send(scanInfo)
+            ws.send(JSON.stringify(scanInfo));
 
             const entries = await redisClient.xRange(ws.unityID, "-", "+");
 

@@ -25,7 +25,7 @@ export default function NewScan() {
     }
 
     const connectWebsocket = () => {
-        wsCtx?.openWs(unityCode);
+        wsCtx?.openWs(unityCode, mapName);
     }
 
     return(
