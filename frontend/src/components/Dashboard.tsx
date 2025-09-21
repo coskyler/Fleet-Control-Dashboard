@@ -1,9 +1,37 @@
 import ScanRenderer from './ScanRenderer';
 import { WsContext } from '../websocket/ScanWsContext';
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
     const wsCtx = useContext(WsContext);
+
+    const navigate = useNavigate();
+
+    console.log("rendered the dashboard");
+    
+    useEffect(() => {
+        async function reconnect() {
+            if(wsCtx?.status.current === 'uninitialized') {
+                wsCtx.status.current = 'connecting';
+                const unityID = await (await fetch("https://localhost:8080/api/users/getUnityID", { credentials: "include" })).text();
+                console.log("Tried reconnecting with ", unityID);
+                if(unityID === "No mangos") {
+                    console.log('No mangos, scan expired');
+                    navigate('/newScan');
+                    return;
+                } else {
+                    const connection: string | undefined = await wsCtx?.openWs(unityID, '');
+                    if(connection !== 'Connecting') {
+                        console.log('connection err:\n', connection);
+                        navigate('/newScan');
+                        return;
+                    }
+                }
+            }
+        }
+        reconnect();
+    }, [wsCtx]);
 
     return  (
         <main className="h-full flex flex-col bg-neutral-800 p-6 text-white">

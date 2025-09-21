@@ -11,6 +11,8 @@ export default function ScanRenderer(props: RenderProps) {
     const voxelsRef = props.voxelsRef;
     const voxels = voxelsRef?.current;
 
+    console.log("rendered the renderer");
+
     return (
         <Canvas style={{ width: '100%', height: '100%'}}>
             <ambientLight intensity={.5} />

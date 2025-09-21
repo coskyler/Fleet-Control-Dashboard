@@ -17,11 +17,12 @@ function upgradeBrowser(wss) {
                 sessionID = req.signedCookies?.["connect.sid"];
             })
 
+            let sessionStr;
+            const sessionKey = `sess:${sessionID}`;
             if(sessionID) {
-                const key = `sess:${sessionID}`;
-                const sessionStr = await redisClient.get(key);
+                sessionStr = await redisClient.get(sessionKey);
                 if(sessionStr) {
-                    ws.session = JSON.parse(sessionStr);
+                    req.session = JSON.parse(sessionStr);
                     ws.sessionID = sessionID;
                 } else {
                     ws.close(1000, "Outdated or invalid session");
@@ -37,10 +38,21 @@ function upgradeBrowser(wss) {
             const unityID = params.get("unityID");
             const scanName =  params.get("scanName");
 
+            if(req.session.unityID && req.session.unityID !== unityID) {
+                ws.close(1000, "You already have a scan going");
+                return;
+            }
+
             const scanInfoStr = await redisClient.get('info:' + unityID);
             const scanInfo = scanInfoStr ? JSON.parse(scanInfoStr) : null;
 
             if(!scanInfo) {
+                const sentUnityID = req.session.unityID;
+                if(sentUnityID !== undefined) {
+                    delete req.session.unityID;
+                    await redisClient.setEx(sessionKey, Number(process.env.SESSION_TTL) / 1000, JSON.stringify(req.session));
+                }
+
                 ws.close(1000, "Invalid Unity ID");
                 return;
             }
@@ -57,6 +69,14 @@ function upgradeBrowser(wss) {
                 ws.owner = true;
             } else {
                 ws.owner = false;
+            }
+
+            //assign unityID to session
+            if(ws.owner) {
+                if(!('unityID' in req.session) || req.session.unityID !== unityID) {
+                    req.session.unityID = unityID;
+                    await redisClient.setEx(sessionKey, Number(process.env.SESSION_TTL) / 1000, JSON.stringify(req.session));
+                }
             }
 
             //say hi :D

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 export default function NewScan() {
     const [mapName, setMapName] = useState('');
     const [unityCode, setUnityCode] = useState('');
+    const [status, setStatus] = useState('Idle');
 
     const wsCtx = useContext(WsContext);
     
@@ -29,16 +30,19 @@ export default function NewScan() {
 
     const connectWebsocket = async () => {
         const connection: string | undefined = await wsCtx?.openWs(unityCode, mapName);
-        if(connection !== 'Connected') {
+        if(connection !== 'Connecting') {
             console.log('connection err:\n', connection);
             return;
         }
+
+        setStatus('Connecting');
     }
 
     useEffect(() => {
-        if(wsCtx?.status.current === 'live') {
+        if(status === 'Connecting' && wsCtx?.status.current === 'live') {
             navigate("/dashboard");
         }
+        setStatus('Idle');
     }, [wsCtx]);
 
     return(

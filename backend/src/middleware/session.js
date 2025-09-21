@@ -8,7 +8,7 @@ const sessionMiddleware =  session({
   resave: false,
   saveUninitialized: true,
   rolling: true,
-  cookie: { secure: true, sameSite: "none", maxAge: 600000 } // 10 minutes
+  cookie: { secure: true, sameSite: "none", maxAge: Number(process.env.SESSION_TTL) }
 });
 
 const cors = (req, res, next) => {

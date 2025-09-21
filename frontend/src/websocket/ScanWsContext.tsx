@@ -15,7 +15,7 @@ type WsContextType = {
     endScan: () => void
 }
 
-type Status = 'connecting' | 'live' | 'disconnected' | 'completed';
+type Status = 'uninitialized' | 'connecting' | 'live' | 'disconnected' | 'completed';
 
 type DroneData = {
     name: string,
@@ -42,7 +42,7 @@ export function WsProvider({ children }: { children: ReactNode }) {
     const voxelSize = useRef(1);
     const voxels = useRef<Vector3[]>([]);
     const drones = useRef<Map<string, DroneData>>(new Map());
-    const status = useRef<Status>('connecting');
+    const status = useRef<Status>('uninitialized');
     const scanName = useRef('');
 
     const [tick, setTick] = useState(0);
@@ -57,6 +57,8 @@ export function WsProvider({ children }: { children: ReactNode }) {
         await fetch("https://localhost:8080/", { credentials: "include" });
         const ws = new WebSocket(`wss://localhost:8080/ws/browser?unityID=${unityCode}&scanName=${newScanName}`);
         wsRef.current = ws;
+
+        status.current = 'connecting';
         
         ws.onmessage = (event) => {
             status.current = 'live';
@@ -103,7 +105,8 @@ export function WsProvider({ children }: { children: ReactNode }) {
                 });
             }
 
-            setTick(tick + 1);
+            console.log("we should we rendering here...");
+            setTick(prev => prev + 1);
         };
 
         ws.onclose = (event) => {
@@ -115,16 +118,16 @@ export function WsProvider({ children }: { children: ReactNode }) {
                 status.current = 'disconnected';
             }
 
-            setTick(tick + 1);
+            setTick(prev => prev + 1);
         };
 
         ws.onerror = (err) => {
             status.current = 'disconnected';
             console.log("Ws err:\n", err);
-            setTick(tick + 1);
+            setTick(prev => prev + 1);
         }
 
-        return "Connected";
+        return "Connecting";
     }
 
     const startScan = () => console.log("start scan");
