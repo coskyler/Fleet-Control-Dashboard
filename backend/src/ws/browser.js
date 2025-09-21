@@ -2,6 +2,7 @@ import { WebSocketServer } from "ws";
 import redisClient from '../infra/redis.js'
 import http from 'http';
 import cookieParser from 'cookie-parser';
+import { createClient } from "redis";
 
 const wssBrowser = new WebSocketServer({ noServer: true });
 let browserSockets = {};
@@ -69,6 +70,7 @@ function upgradeBrowser(wss) {
                 ws.owner = true;
             } else {
                 ws.owner = false;
+                scanInfo.owner = 'not you!';
             }
 
             //assign unityID to session
@@ -102,7 +104,27 @@ function upgradeBrowser(wss) {
                 ws.send(JSON.stringify(map));
             }
 
-            //start sending current info
+            //subscribe to the stream
+            let prevId = entries.length ? entries[entries.length - 1].id : '$';
+            (async () => {
+                const streamClient = createClient({ url: process.env.REDIS_URL });
+                await streamClient.connect();
+                while(ws.readyState === ws.OPEN) {
+                    const streamDataArr = await streamClient.xRead({ key: ws.unityID, id: prevId }, { BLOCK: 0, COUNT: 1});
+
+                    if(streamDataArr && ws.readyState === ws.OPEN) {
+                        for(const streamData of streamDataArr[0].messages) {
+                            ws.send(streamData.message.payload);
+                            prevId = streamData.id;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+                streamClient.quit();
+            })();
+
+            //listen for messages
             wss.emit("connection", ws, req);
         });
     };
