@@ -1,7 +1,3 @@
-CREATE DATABASE fleet_control_dashboard_db;
-
-\c fleet_control_dashboard_db;
-
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
