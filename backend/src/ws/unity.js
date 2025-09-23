@@ -38,13 +38,18 @@ wssUnity.on("connection", (ws, req) => {
             data = JSON.parse(msg.toString()); 
         } catch(err)  {
             console.error("Invalid JSON from Unity websocket message: " + err);
+            return;
         }
 
         await redisClient.xAdd(ws.unityID, '*', { payload: JSON.stringify(data) });
     })
 
-    ws.on('close', () => {
+    ws.on('close', async () => {
         delete unitySockets[ws.unityID];
+
+        await redisClient.xAdd(ws.unityID, '*', { payload: JSON.stringify({closed: true}) });
+        await redisClient.expire(ws.unityID, 3600);
+        await redisClient.expire('info:' + ws.unityID, 3600);
     });
 });
 

@@ -3,9 +3,9 @@ import redisClient from '../infra/redis.js'
 import http from 'http';
 import cookieParser from 'cookie-parser';
 import { createClient } from "redis";
+import { sendUnityWs, closeUnityWs } from './unity.js';
 
 const wssBrowser = new WebSocketServer({ noServer: true });
-let browserSockets = {};
 
 const parse = cookieParser(process.env.SESSION_SIGNATURE);
 
@@ -40,7 +40,7 @@ function upgradeBrowser(wss) {
             const scanName =  params.get("scanName");
 
             if(req.session.unityID && req.session.unityID !== unityID) {
-                ws.close(1000, "You already have a scan going");
+                ws.close(1000, "You already have an ongoing scan");
                 return;
             }
 
@@ -110,10 +110,14 @@ function upgradeBrowser(wss) {
                 const streamClient = createClient({ url: process.env.REDIS_URL });
                 await streamClient.connect();
                 while(ws.readyState === ws.OPEN) {
-                    const streamDataArr = await streamClient.xRead({ key: ws.unityID, id: prevId }, { BLOCK: 0, COUNT: 1});
+                    const streamDataArr = await streamClient.xRead({ key: ws.unityID, id: prevId }, { BLOCK: 3600000, COUNT: 1});
 
                     if(streamDataArr && ws.readyState === ws.OPEN) {
                         for(const streamData of streamDataArr[0].messages) {
+                            if('closed' in streamData.message.payload) {
+                                ws.close(1000, 'Unity scan ended');
+                                break;
+                            }
                             ws.send(streamData.message.payload);
                             prevId = streamData.id;
                         }
@@ -124,14 +128,33 @@ function upgradeBrowser(wss) {
                 streamClient.quit();
             })();
 
-            //listen for messages
-            wss.emit("connection", ws, req);
+            //listen for messages if owner
+            if(ws.owner === true) wss.emit("connection", ws, req);
         });
     };
 }
 
 wssBrowser.on("connection", (ws, req) => {
+    ws.on('message', (msg) => {
+        let data;
+        try {
+            data = JSON.parse(msg.toString()); 
+        } catch(err)  {
+            console.error("Invalid JSON from browser websocket: " + err);
+            return;
+        }
 
+        if(!'message' in data) {
+            console.error("No message in browser websocket JSON: " + err);
+            return;
+        }
+
+        if(data.message === 'close') {
+            closeUnityWs(ws.unityID);
+        } else {
+            sendUnityWs(ws.unityID, data.message);
+        }
+    });
 });
 
-export { wssBrowser, browserSockets, upgradeBrowser };
+export { wssBrowser, upgradeBrowser };
