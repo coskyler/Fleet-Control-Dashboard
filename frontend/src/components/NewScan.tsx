@@ -16,7 +16,7 @@ export default function NewScan() {
             .replace(/[^a-zA-Z0-9 @#\-_.]/g, '') //remove disallowed characters
             .replace(/\s{2,}/g, ' ') //remove multiple spaces
             .trim() //remove leading and trailing spaces
-            .slice(0, 32); //limit to 32 chars
+            .slice(0, 50); //limit to 50 chars
 
         setMapName(cleaned)
     }

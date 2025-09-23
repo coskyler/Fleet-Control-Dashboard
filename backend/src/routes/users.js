@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query, insert } from '../db.js'
+import { query, insert } from '../infra/db.js'
 import bcrypt from 'bcrypt';
 const router = Router();
 
@@ -69,7 +69,7 @@ router.post('/create', async (req, res) => {
 });
 
 //login
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -79,13 +79,90 @@ router.post('/login', (req, res) => {
         });
     }
 
+    if (typeof username !== 'string' || typeof password !== 'string') {
+        return res.status(400).json({ success: false, message: 'Username and password are required' });
+    }
+
+    username = username.trim();
+
+    if (username.length > 50) {
+        return res.status(400).json({
+            success: false,
+            message: 'Username cannot be longer than 50 characters'
+        });
+    }
+
+    if(password.length > 128) {
+        return res.status(400).json({
+            success: false,
+            message: 'Password cannot be longer than 128 characters'
+        });
+    };
+
+    try {
+        const rows = await query('SELECT id, username, password FROM users WHERE username = $1', [username]);
+
+        const user = rows[0];
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid username or password',
+            });
+        }
+
+        const match = await bcrypt.compare(password, user.password);
+
+        if (!match) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid username or password',
+            });
+        }
+
+        req.session.username = user.username;
+        req.session.userID = user.id;
+
+        return res.status(200).json({
+            success: true,
+            user: {id: user.id, username: user.username }
+        });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({
+            success: false,
+            message: 'Database error'
+        });
+    }
 
 });
 
 //logout
 router.post('/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) return res.status(500).json({ success: false, message: 'Logout failed'});
 
+        res.clearCookie('connect.sid', {
+            path: '/',
+            secure: true,
+            sameSite: 'none',
+        });
+
+        res.json({ success: true, message: 'Logged out' });
+    });
 });
 
+//get info
+router.get('/me', (req, res) => {
+    if(!req.session || !req.session.userID)
+        return res.status(401).json({ success: false, message: 'Not logged in'});
+
+    return res.json({
+        success: true,
+        userID: req.session.userID,
+        username: req.session.username
+    })
+    
+});
 
 export default router;

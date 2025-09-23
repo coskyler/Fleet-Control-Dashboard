@@ -1,8 +1,16 @@
-const {Pool} = require('pg');
-require('dotenv').config();
+import pkg from 'pg';
+const { Pool } = pkg;
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
 });
 
-module.exports = pool;
+export async function query(sql, params) {
+  const { rows } = await pool.query(sql, params);
+  return rows;
+}
+
+export async function insert(sql, params) {
+  const { rows } = await pool.query(sql + ' RETURNING *', params);
+  return rows[0];
+}

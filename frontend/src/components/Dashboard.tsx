@@ -14,7 +14,7 @@ export default function Dashboard() {
         async function reconnect() {
             if(wsCtx?.status.current === 'uninitialized') {
                 wsCtx.status.current = 'connecting';
-                const unityID = await (await fetch("https://localhost:8080/api/users/getUnityID", { credentials: "include" })).text();
+                const unityID = await (await fetch("https://localhost:8080/api/scans/getUnityID", { credentials: "include" })).text();
                 console.log("Tried reconnecting with ", unityID);
                 if(unityID === "No mangos") {
                     console.log('No mangos, scan expired');
