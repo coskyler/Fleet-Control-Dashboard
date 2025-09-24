@@ -49,6 +49,9 @@ router.post('/create', async (req, res) => {
         const hashed = await bcrypt.hash(password, 10);
         const user = await insert('INSERT INTO users (username, password) VALUES ($1, $2)', [username, hashed]);
 
+        req.session.username = user.username;
+        req.session.userID = user.id;
+        
         return res.status(201).json({
             success: true,
             user: {id: user.id, username: user.username }

@@ -13,10 +13,10 @@ function upgradeUnity(wss) {
             const params = new URL(req.url, "http://localhost").searchParams;
 
             const scanInfo = {
-                "voxelSize": params.get("voxelSize"),
-                "startTime": params.get("startTime"),
+                "voxelSize": params.get("voxelSize") || '1',
+                "startTime": params.get("startTime") || '0',
                 "drones": params.getAll("drone"),
-                "name": null,
+                "name": 'Untitled Scan',
                 "owner": null
             };
 

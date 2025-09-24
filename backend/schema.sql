@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS scans (
     name VARCHAR(50) NOT NULL DEFAULT 'Untitled Scan',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     voxels INT[] NOT NULL,
+    public BOOLEAN NOT NULL DEFAULT false,
     CHECK (mod(coalesce(array_length(voxels, 1),0), 3) = 0) --ensure voxels is a multiple of 3 (representing vector3s)
 );
 
