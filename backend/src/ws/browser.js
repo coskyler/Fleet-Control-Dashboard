@@ -93,7 +93,13 @@ function upgradeBrowser(wss) {
                 let map = {}
                 let voxels = [];
 
+                let closed = false;
+
                 for(let i = 0; i < entries.length; i++) {
+                    if('closed' in streamData.message.payload) {
+                        closed = true;
+                        break;
+                    }
                     let msg = JSON.parse(entries[i].message.payload);
                     voxels.push(...msg.voxels);
                 }
@@ -102,6 +108,11 @@ function upgradeBrowser(wss) {
                 map.drones = JSON.parse(entries[entries.length - 1].message.payload).drones;
 
                 ws.send(JSON.stringify(map));
+
+                if(closed) {
+                    ws.close(1000, 'Unity scan ended');
+                    return;
+                }
             }
 
             //subscribe to the stream
