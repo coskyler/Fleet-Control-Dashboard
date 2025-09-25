@@ -1,5 +1,5 @@
 import { useState, useContext, useEffect } from 'react';
-import { WsContext } from '../websocket/ScanWsContext';
+import { WsContext } from '../contexts/ScanWsContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function NewScan() {
@@ -74,7 +74,7 @@ export default function NewScan() {
                     />
                 </div>
             </div>
-            <button onClick={connectWebsocket} className={`mb-6 bg-neutral-200 p-2 rounded-xl mt-6 text-black font-semibold hover:bg-neutral-400 transition duration-100 active:bg-neutral-200 ${unityCode.length === 5 ? "visible" : "invisible"}`}>Connect</button>
+            <button onClick={connectWebsocket} className={`cursor-pointer mb-6 bg-neutral-200 p-2 rounded-xl mt-6 text-black font-semibold hover:bg-neutral-400 transition duration-100 active:bg-neutral-200 ${unityCode.length === 5 ? "visible" : "invisible"}`}>Connect</button>
         </main>
     );
 }

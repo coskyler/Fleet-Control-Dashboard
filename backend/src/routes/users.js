@@ -73,7 +73,7 @@ router.post('/create', async (req, res) => {
 
 //login
 router.post('/login', async (req, res) => {
-    const { username, password } = req.body;
+    let { username, password } = req.body;
 
     if (!username || !password) {
         return res.status(400).json({
@@ -160,10 +160,13 @@ router.get('/me', (req, res) => {
     if(!req.session || !req.session.userID)
         return res.status(401).json({ success: false, message: 'Not logged in'});
 
+    const unityID = req.session.unityID || '-1';
+
     return res.json({
         success: true,
         userID: req.session.userID,
-        username: req.session.username
+        username: req.session.username,
+        unityID: unityID
     })
     
 });

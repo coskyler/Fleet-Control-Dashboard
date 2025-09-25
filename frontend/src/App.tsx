@@ -3,10 +3,12 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import NewScan from './components/NewScan';
 import Scans from './components/Scans';
+import Login from './components/Login';
+import Signup from './components/Signup';
 
 function App() {
   const location = useLocation();
-  const hideSidebar = location.pathname === "/login";
+  const hideSidebar = false //location.pathname === "/login";
 
   return (
     <div className="flex h-screen">
@@ -16,7 +18,9 @@ function App() {
         <Routes>
           <Route path="/dashboard" element = {<Dashboard />} />
           <Route path="/newscan" element = {<NewScan />} />
-          <Route path="/scans/:scanname" element = {<Scans />} />
+          <Route path="/scans/:scanID" element = {<Scans />} />
+          <Route path="/login" element = {<Login />} />
+          <Route path="/signup" element = {<Signup />} />
         </Routes>
       </div>
     </div>

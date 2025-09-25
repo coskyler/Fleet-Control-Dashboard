@@ -56,12 +56,12 @@ router.post('/discard', async (req, res) => {
     const scanInfo = scanInfoStr ? JSON.parse(scanInfoStr) : null;
     if(!scanInfo) return res.status(400).json({ success: false, message: 'Scan does not exist'});
 
-    if(scanInfo.owner !== req.sessionID) return res.status(400).json({ success: false, message: "You don't own this scan"});
+    if(scanInfo.owner !== req.sessionID) return res.status(403).json({ success: false, message: "You don't own this scan"});
 
     await redisClient.del('info:' + unityID);
     await redisClient.del(unityID);
 
-    return res.status(400).json({ success: true, message: 'Scan discarded'});
+    return res.json({ success: true, message: 'Scan discarded'});
 });
 
 //load  scan
@@ -74,7 +74,7 @@ router.get('/load/:scan_id', async (req, res) => {
     let uid = req.session.userID;
     if(!uid) uid = -1;
 
-    const { rows } = await pool.query(
+    const { rows } = await query(
         `SELECT scan_id, user_id, name, created_at, voxels, users.username
         FROM scans
         JOIN users ON scans.user_id = users.id
@@ -91,15 +91,5 @@ router.get('/load/:scan_id', async (req, res) => {
 router.get('/list', (req, res) => {
 
 });
-
-//get active unityID
-router.get('/getUnityID', (req, res) => {
-    const unityID = req.session.unityID;
-    if(unityID !== undefined) {
-        res.send(unityID);
-    } else {
-        res.send("No mangos");
-    }
-})
 
 export default router;

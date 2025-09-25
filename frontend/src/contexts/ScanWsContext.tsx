@@ -1,5 +1,7 @@
 import { createContext, useState, useRef, type ReactNode, type RefObject } from 'react';
 import { Vector3, Quaternion } from "three";
+const apiDomain = import.meta.env.VITE_API_DOMAIN;
+const wssDomain = import.meta.env.VITE_WSS_DOMAIN;
 
 type WsContextType = {
     scanName: RefObject<string>,
@@ -15,7 +17,7 @@ type WsContextType = {
     endScan: () => void
 }
 
-type Status = 'uninitialized' | 'connecting' | 'live' | 'disconnected' | 'completed';
+type Status = 'uninitialized' | 'connecting' | 'live' | 'live_scanning' | 'disconnected' | 'completed';
 
 type DroneData = {
     name: string,
@@ -54,19 +56,18 @@ export function WsProvider({ children }: { children: ReactNode }) {
             return "Already connected";
         }
 
-        await fetch("https://localhost:8080/", { credentials: "include" });
-        const ws = new WebSocket(`wss://localhost:8080/ws/browser?unityID=${unityCode}&scanName=${newScanName}`);
+        const ws = new WebSocket(`${wssDomain}/ws/browser?unityID=${unityCode}&scanName=${newScanName}`);
         wsRef.current = ws;
 
         status.current = 'connecting';
         
         ws.onmessage = (event) => {
-            status.current = 'live';
-
             const data = JSON.parse(event.data);
             console.log("msg:\n", data);
 
             if(!('drones' in data)) return;
+
+            if(status.current !== 'live_scanning') status.current = 'live';
 
             if('name' in data) {
                 scanName.current = data.name;
@@ -130,10 +131,22 @@ export function WsProvider({ children }: { children: ReactNode }) {
         return "Connecting";
     }
 
-    const startScan = () => console.log("start scan");
-    const dispatch = () => console.log("dispatch");
-    const recall = () => console.log("recall");
-    const endScan = () => console.log("end scan");
+    const startScan = () => {
+        wsRef.current?.send('start');
+        status.current = 'live_scanning';
+    };
+
+    const dispatch = () => {
+        wsRef.current?.send('dispatch');
+    };
+
+    const recall = () => {
+        wsRef.current?.send('recall');
+    };
+
+    const endScan = () => {
+        wsRef.current?.send('close');
+    };
 
     return (
         <WsContext.Provider value={{ scanName, voxelSize, voxels, drones, status, tick, openWs, startScan, dispatch, recall, endScan }}>

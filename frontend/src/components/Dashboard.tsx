@@ -1,23 +1,28 @@
 import ScanRenderer from './ScanRenderer';
-import { WsContext } from '../websocket/ScanWsContext';
+import { WsContext } from '../contexts/ScanWsContext';
+import { AuthContext } from '../contexts/AuthContext';
 import { useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+const apiDomain = import.meta.env.VITE_API_DOMAIN;
 
 export default function Dashboard() {
     const wsCtx = useContext(WsContext);
+    const authCtx = useContext(AuthContext);
 
     const navigate = useNavigate();
 
     console.log("rendered the dashboard");
     
     useEffect(() => {
+        if(authCtx?.status === false) return;
+
         async function reconnect() {
             if(wsCtx?.status.current === 'uninitialized') {
                 wsCtx.status.current = 'connecting';
-                const unityID = await (await fetch("https://localhost:8080/api/scans/getUnityID", { credentials: "include" })).text();
+                const unityID = authCtx?.unityID || '-1';
                 console.log("Tried reconnecting with ", unityID);
-                if(unityID === "No mangos") {
-                    console.log('No mangos, scan expired');
+                if(unityID === "-1") {
+                    console.log('No existing scan');
                     navigate('/newScan');
                     return;
                 } else {
@@ -31,7 +36,15 @@ export default function Dashboard() {
             }
         }
         reconnect();
-    }, [wsCtx]);
+    }, [wsCtx, authCtx]);
+
+    const saveScan = async () => {
+
+    }
+
+    const discardScan = async () => {
+
+    }
 
     return  (
         <main className="h-full flex flex-col bg-neutral-800 p-6 text-white">
@@ -50,10 +63,12 @@ export default function Dashboard() {
                 <div className="w-64 mr-2"></div>
                 
                 <div className="relative flex-1 flex justify-center gap-4">
-                    <button className="absolute left-0 font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl hover:bg-neutral-400 transition duration-100 active:bg-neutral-200">Start Scan</button>
-                    <button className="font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl  hover:bg-neutral-400 transition duration-100 active:bg-neutral-200">Dispatch</button>
-                    <button className="font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl  hover:bg-neutral-400 transition duration-100 active:bg-neutral-200">Recall</button>
-                    <button className="absolute text-black right-0 font-semibold bg-red-400 px-3 py-1 rounded-xl hover:bg-red-500 transition duration-100 active:bg-red-400">End Scan</button>
+                    <button onClick={() => {wsCtx?.startScan()}} className={`cursor-pointer absolute left-0 font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl hover:bg-neutral-400 transition duration-100 active:bg-neutral-200 ${wsCtx?.status.current === 'live' ? 'flex' : 'hidden'}`}>Start Scan</button>
+                    <button onClick={() => {wsCtx?.dispatch()}} className={`cursor-pointer font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl  hover:bg-neutral-400 transition duration-100 active:bg-neutral-200${wsCtx?.status.current === 'live_scanning' ? 'flex' : 'hidden'}`}>Dispatch</button>
+                    <button onClick={() => {wsCtx?.recall()}} className={`cursor-pointer font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl  hover:bg-neutral-400 transition duration-100 active:bg-neutral-200${wsCtx?.status.current === 'live_scanning' ? 'flex' : 'hidden'}`}>Recall</button>
+                    <button onClick={() => {saveScan()}} className={`cursor-pointer font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl  hover:bg-neutral-400 transition duration-100 active:bg-neutral-200${wsCtx?.status.current === 'completed' ? 'flex' : 'hidden'}`}>Save Scan</button>
+                    <button onClick={() => {discardScan()}} className={`cursor-pointer font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl  hover:bg-neutral-400 transition duration-100 active:bg-neutral-200${wsCtx?.status.current === 'completed' ? 'flex' : 'hidden'}`}>Discard Scan</button>
+                    <button onClick={() => {wsCtx?.endScan()}} className={`cursor-pointer absolute text-black right-0 font-semibold bg-red-400 px-3 py-1 rounded-xl hover:bg-red-500 transition duration-100 active:bg-red-400${wsCtx?.status.current === 'live_scanning' ? 'completed' : 'hidden'}`}>End Scan</button>
                 </div>
             </section>
         </main>
