@@ -39,11 +39,33 @@ export default function Dashboard() {
     }, [wsCtx, authCtx]);
 
     const saveScan = async () => {
+        const res = await fetch(`${apiDomain}/api/scans/save`, {
+            method: "POST",
+            credentials: "include"
+        });
 
+        const body = await res.json();
+
+        if(!body.success) { console.log('Error saving scan: ' + body.message); return; }
+
+        console.log('Scan saved!')
+        authCtx?.setUnityID('-1');
+        navigate(`/scans/${body.scan_id}`);
     }
 
     const discardScan = async () => {
+        const res = await fetch(`${apiDomain}/api/scans/discard`, {
+            method: "POST",
+            credentials: "include"
+        });
 
+        const body = await res.json();
+
+        if(!body.success) { console.log('Error discarding scan: ' + body.message); return; }
+
+        console.log('Scan discarded!')
+        authCtx?.setUnityID('-1');
+        navigate('/newscan');
     }
 
     return  (

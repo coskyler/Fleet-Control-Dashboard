@@ -18,6 +18,7 @@ type UserResponse = {
     userID: string;
     username: string;
     unityID: string;
+    message: string;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -40,9 +41,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUserID(body.userID);
                 setUsername(body.username);
                 setUnityID(body.unityID)
+            } else {
+                console.log("Failed getting user info: " + body.message);
             }
 
             setStatus(true);
+            console.log(`
+                authed: ${body.success}
+                userID: ${body.userID}
+                username: ${body.username}
+                unityID: ${body.unityID}
+                status: true
+            `);
 
         }
 

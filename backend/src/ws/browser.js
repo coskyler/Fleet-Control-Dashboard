@@ -96,7 +96,7 @@ function upgradeBrowser(wss) {
                 let closed = false;
 
                 for(let i = 0; i < entries.length; i++) {
-                    if('closed' in streamData.message.payload) {
+                    if('closed' in JSON.parse(entries[i].message.payload)) {
                         closed = true;
                         break;
                     }
@@ -125,7 +125,7 @@ function upgradeBrowser(wss) {
 
                     if(streamDataArr && ws.readyState === ws.OPEN) {
                         for(const streamData of streamDataArr[0].messages) {
-                            if('closed' in streamData.message.payload) {
+                            if('closed' in JSON.parse(streamData.message.payload)) {
                                 ws.close(1000, 'Unity scan ended');
                                 break;
                             }

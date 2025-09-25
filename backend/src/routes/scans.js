@@ -27,20 +27,35 @@ router.post('/save', async (req, res) => {
     for(let i = 0; i < entries.length; i++) {
         let msg = JSON.parse(entries[i].message.payload);
 
+        console.log(msg);
+
         if('closed' in msg) { closed = true; continue; }
 
-        voxels.push(...msg.voxels.x);
-        voxels.push(...msg.voxels.y);
-        voxels.push(...msg.voxels.z);
+        for(const v of msg.voxels) {
+            voxels.push(v.x);
+            voxels.push(v.y);
+            voxels.push(v.z);
+
+            console.log('VOXEL INFO:', v);
+        }
     }
+
+    console.log(`\nSaving voxels: ${voxels}\n`);
 
     if(!closed) return res.status(400).json({ success: false, message: 'Scan is active'});
     if(voxels.length === 0) return res.status(400).json({ success: false, message: 'Scan is empty'});
 
     try {
         const scan = await insert('INSERT INTO scans (user_id, name, voxels) VALUES ($1, $2, $3)', [uid, scanInfo.name, voxels]);
+        
+        await redisClient.del('info:' + unityID);
+        await redisClient.del(unityID);
 
-        return res.status(201).json({ success: true });
+        console.log(`\nWhat got saved: ${scan.voxels}\n`);
+
+        delete req.session.unityID;
+
+        return res.status(201).json({ success: true, scan_id: scan.scan_id });
     } catch (e) {
         console.error(e);
         res.status(500).json({ success: false, message: 'Database error' });
@@ -61,10 +76,12 @@ router.post('/discard', async (req, res) => {
     await redisClient.del('info:' + unityID);
     await redisClient.del(unityID);
 
+    delete req.session.unityID;
+
     return res.json({ success: true, message: 'Scan discarded'});
 });
 
-//load  scan
+//load scan
 router.get('/load/:scan_id', async (req, res) => {
     const raw = req.params.scan_id;
     if (!/^\d+$/.test(raw)) return res.status(400).json({ success: false, message: 'Invalid scan ID'});
@@ -74,7 +91,7 @@ router.get('/load/:scan_id', async (req, res) => {
     let uid = req.session.userID;
     if(!uid) uid = -1;
 
-    const { rows } = await query(
+    const rows = await query(
         `SELECT scan_id, user_id, name, created_at, voxels, users.username
         FROM scans
         JOIN users ON scans.user_id = users.id

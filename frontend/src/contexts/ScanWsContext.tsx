@@ -113,7 +113,7 @@ export function WsProvider({ children }: { children: ReactNode }) {
         ws.onclose = (event) => {
             wsRef.current = null;
             console.log("socket closed: " + event.reason);
-            if(event.reason === 'scan completed') {
+            if(event.reason === 'Unity scan ended') {
                 status.current = 'completed';
             } else {
                 status.current = 'disconnected';
@@ -137,15 +137,15 @@ export function WsProvider({ children }: { children: ReactNode }) {
     };
 
     const dispatch = () => {
-        wsRef.current?.send('dispatch');
+        wsRef.current?.send(JSON.stringify({ message: 'dispatch' }));
     };
 
     const recall = () => {
-        wsRef.current?.send('recall');
+        wsRef.current?.send(JSON.stringify({ message: 'recall' }));
     };
 
     const endScan = () => {
-        wsRef.current?.send('close');
+        wsRef.current?.send(JSON.stringify({ message: 'close' }));
     };
 
     return (
