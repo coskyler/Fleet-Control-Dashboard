@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query, insert } from '../infra/db.js'
+import { query, insert, update } from '../infra/db.js'
 import redisClient from '../infra/redis.js'
 const router = Router();
 
@@ -45,8 +45,10 @@ router.post('/save', async (req, res) => {
     if(!closed) return res.status(400).json({ success: false, message: 'Scan is active'});
     if(voxels.length === 0) return res.status(400).json({ success: false, message: 'Scan is empty'});
 
+    const scanName = scanInfo.name ? scanInfo.name : 'Untitled Scan';
+
     try {
-        const scan = await insert('INSERT INTO scans (user_id, name, voxels) VALUES ($1, $2, $3)', [uid, scanInfo.name, voxels]);
+        const scan = await insert('INSERT INTO scans (user_id, name, voxels) VALUES ($1, $2, $3)', [uid, scanName, voxels]);
         
         await redisClient.del('info:' + unityID);
         await redisClient.del(unityID);
@@ -58,7 +60,7 @@ router.post('/save', async (req, res) => {
         return res.status(201).json({ success: true, scan_id: scan.scan_id });
     } catch (e) {
         console.error(e);
-        res.status(500).json({ success: false, message: 'Database error' });
+        return res.status(500).json({ success: false, message: 'Database error' });
     }
 });
 
@@ -91,17 +93,45 @@ router.get('/load/:scan_id', async (req, res) => {
     let uid = req.session.userID;
     if(!uid) uid = -1;
 
-    const rows = await query(
-        `SELECT scan_id, user_id, name, created_at, voxels, users.username
-        FROM scans
-        JOIN users ON scans.user_id = users.id
-        WHERE scan_id = $1 AND (public = TRUE OR user_id = $2)
-        LIMIT 1`,
-        [scan_id, uid]
-    );
+    try {
+        const rows = await query(
+            `SELECT scan_id, user_id, name, created_at, voxels, users.username, public
+            FROM scans
+            JOIN users ON scans.user_id = users.id
+            WHERE scan_id = $1 AND (public = TRUE OR user_id = $2)
+            LIMIT 1`,
+            [scan_id, uid]
+        );
 
-    if (!rows.length) return res.status(404).json({ success: false, message: 'Not found' });
-    return res.json({ success: true, scan: rows[0] });
+        if (!rows.length) return res.status(404).json({ success: false, message: 'Not found' });
+        return res.json({ success: true, scan: rows[0] });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ success: false, message: 'Database error' });
+    }
+});
+
+//update visibility
+router.put('/update', async (req, res) => {
+    const { scanID: rawScanID, visibility } = req.body;
+    const uid = req.session.userID;
+
+    if (!/^\d+$/.test(rawScanID)) return res.status(400).json({ success: false, message: 'Invalid scan ID'});
+
+    const scanID = parseInt(rawScanID, 10);
+
+    if(visibility !== true && visibility !== false) return res.status(400).json({ success: false, message: 'Visibility must be a boolean'});
+
+    try {
+        const row = await update(
+            'UPDATE scans SET "public" = $1 WHERE user_id = $2 AND scan_id = $3',
+            [visibility, uid, scanID]
+        );
+        return res.status(200).json({ success: true, message: 'Visibility updated' });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ success: false, message: 'Database error' });
+    }
 });
 
 //get scans list

@@ -64,7 +64,7 @@ router.post('/create', async (req, res) => {
             });
         }
         console.error(e);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'Database error'
         });
@@ -132,7 +132,7 @@ router.post('/login', async (req, res) => {
         });
     } catch (e) {
         console.error(e);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'Database error'
         });

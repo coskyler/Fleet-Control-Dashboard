@@ -14,3 +14,8 @@ export async function insert(sql, params) {
   const { rows } = await pool.query(sql + ' RETURNING *', params);
   return rows[0];
 }
+
+export async function update(sql, params) {
+  const { rows } = await pool.query(sql + ' RETURNING *', params);
+  return rows[0];
+}
