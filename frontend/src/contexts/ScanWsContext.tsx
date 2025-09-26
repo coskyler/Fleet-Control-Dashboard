@@ -11,6 +11,7 @@ type WsContextType = {
     drones: RefObject<Map<string, DroneData>>,
     status: RefObject<Status>,
     tick: number,
+    scanOwner: RefObject<string>,
     openWs: (unityID: string, scanName: string) => Promise<string>;
     startScan: () => void,
     dispatch: () => void,
@@ -50,8 +51,13 @@ export function WsProvider({ children }: { children: ReactNode }) {
     const drones = useRef<Map<string, DroneData>>(new Map());
     const status = useRef<Status>('uninitialized');
     const scanName = useRef('');
+    const scanOwner = useRef('');
 
     const [tick, setTick] = useState(0);
+
+    function round2(val: any) {
+        return Number.parseFloat(Number(val).toFixed(2));
+    }
 
     useEffect(() => {
         if(authCtx?.authed === false) {
@@ -69,19 +75,23 @@ export function WsProvider({ children }: { children: ReactNode }) {
         const ws = new WebSocket(`${wssDomain}/ws/browser?unityID=${unityCode}&scanName=${newScanName}`);
         wsRef.current = ws;
 
+        voxels.current = [];
+        drones.current = new Map();
+
         status.current = 'connecting';
         
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
             console.log("msg:\n", data);
 
-            if(!('drones' in data)) return;
-
             if(status.current !== 'live_scanning') status.current = 'live';
+
+            if(!('drones' in data) && !('voxels' in data)) return;
 
             if('name' in data) {
                 scanName.current = data.name;
                 voxelSize.current = data.voxelSize;
+                scanOwner.current = data.owner;
 
                 data.drones.forEach((droneName: string) => {
                     const newDroneData: DroneData = {
@@ -94,23 +104,28 @@ export function WsProvider({ children }: { children: ReactNode }) {
                     drones.current.set(droneName, newDroneData)
                 });
             } else {
-                data.drones.forEach((droneInfo: IncomingDroneData) => {
-                    const convertedPos = new Vector3(droneInfo.pos.x, droneInfo.pos.y, droneInfo.pos.z);
-                    const convertedScale = new Vector3(droneInfo.scale.x, droneInfo.scale.y, droneInfo.scale.z);
-                    const convertedOrientation = new Quaternion(droneInfo.orientation.x, droneInfo.orientation.y, droneInfo.orientation.z, droneInfo.orientation.w);
+                if(('drones' in data)) {
+                    data.drones.forEach((droneInfo: IncomingDroneData) => {
 
-                    const newDroneData: DroneData = {
-                        name: droneInfo.name,
-                        pos: convertedPos,
-                        scale: convertedScale,
-                        orientation: convertedOrientation
-                    }
+                        const convertedPos = new Vector3(round2(droneInfo.pos.x), round2(droneInfo.pos.y), -round2(droneInfo.pos.z));
 
-                    drones.current.set(droneInfo.name, newDroneData)
-                });
+                        const convertedScale = new Vector3(round2(droneInfo.scale.x), round2(droneInfo.scale.y), round2(droneInfo.scale.z));
+
+                        const convertedOrientation = new Quaternion(-round2(droneInfo.orientation.x), round2(droneInfo.orientation.y), -round2(droneInfo.orientation.z), round2(droneInfo.orientation.w));
+
+                        const newDroneData: DroneData = {
+                            name: droneInfo.name,
+                            pos: convertedPos,
+                            scale: convertedScale,
+                            orientation: convertedOrientation
+                        }
+
+                        drones.current.set(droneInfo.name, newDroneData)
+                    });
+                };
 
                 data.voxels.forEach((voxelInfo: IncomingVoxelData) => {
-                    const convertedPos = new Vector3(voxelInfo.x, voxelInfo.y, voxelInfo.z);
+                    const convertedPos = new Vector3(round2(voxelInfo.x) * voxelSize.current, round2(voxelInfo.y) * voxelSize.current, round2(-voxelInfo.z) * voxelSize.current);
 
                     voxels.current.push(convertedPos);
                 });
@@ -160,7 +175,7 @@ export function WsProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <WsContext.Provider value={{ scanName, voxelSize, voxels, drones, status, tick, openWs, startScan, dispatch, recall, endScan, setTick }}>
+        <WsContext.Provider value={{ scanName, voxelSize, voxels, drones, status, tick, scanOwner, openWs, startScan, dispatch, recall, endScan, setTick }}>
             {children}
         </WsContext.Provider>
     )

@@ -49,7 +49,7 @@ export default function Sidebar() {
     }, [authCtx?.listUpToDate, authCtx?.authed]);
 
     return (
-        <aside className="flex flex-col w-64 bg-neutral-900 text-white p-4">
+        <aside className="flex flex-col w-64 bg-neutral-900 text-white p-4 h-screen min-h-0">
             <img onClick={() => {navigate('/newscan')}} src="/media/fcdlogo128.png" className="cursor-pointer mb-4 w-[64px]"/>
             <div className={`flex flex-row gap-4 items-stretch w-full mb-6 ${authCtx?.authed === false && authCtx?.status === true ? "block" : "hidden"}`}>
                 <button onClick={() => navigate('/login')} className={`flex-1 cursor-pointer bg-neutral-200 p-1 rounded-xl text-black font-semibold hover:bg-neutral-400 transition duration-100 active:bg-neutral-200`}>Log In</button>
@@ -66,9 +66,9 @@ export default function Sidebar() {
                 </div>
             </div>
 
-            <div className={`mb-4 ${authCtx?.authed === true ? "block" : "hidden"}`}>
+            <div className={`mb-4 ${authCtx?.authed === true ? "flex flex-col flex-1 min-h-0" : "hidden"}`}>
                 <span className={`block text-[16px] mb-2 font-semibold`}>Scan History</span>
-                <div className={`flex flex-col gap-2`}>
+                <div className={`flex flex-col gap-2 overflow-y-auto flex-1 min-h-0 my-scrollbar`}>
                     {rows.map((row, i) => (
                         <SideBarRow key={row.scan_id} scanName={row.name} scanDateTime={row.created_at} scanLink={`/scans/${row.scan_id}`}></SideBarRow>
                     ))}

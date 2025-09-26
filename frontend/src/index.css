@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 @keyframes slide-bars {
-    from { background-position: 0 0; }
-    to   { background-position: 45px 0; }
+    from {
+        background-position: 0 0;
+    }
+    to {
+        background-position: 45px 45px;
+    }
 }
 
 .bg-sliding-bars {
@@ -11,6 +15,25 @@
         #d1d5db 0 16px,
         #9ca3af 16px 32px
     );
-    background-size: 45px 100%;
+
+    background-size: 45px 45px;
     animation: slide-bars 8s linear infinite;
+}
+
+.my-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.my-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.my-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #262626;
+    border-radius: 9999px;
+}
+.my-scrollbar::-webkit-scrollbar-button {
+    display: none;
+}
+.my-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #262626 transparent;
 }
