@@ -51,6 +51,7 @@ export default function Dashboard() {
         console.log('Scan saved!')
         authCtx?.setUnityID('-1');
         navigate(`/scans/${body.scan_id}`);
+        authCtx?.setListUpToDate(false);
     }
 
     const discardScan = async () => {
@@ -85,12 +86,12 @@ export default function Dashboard() {
                 <div className="w-64 mr-2"></div>
                 
                 <div className="relative flex-1 flex justify-center gap-4">
-                    <button onClick={() => {wsCtx?.startScan()}} className={`cursor-pointer absolute left-0 font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl hover:bg-neutral-400 transition duration-100 active:bg-neutral-200 ${wsCtx?.status.current === 'live' ? 'flex' : 'hidden'}`}>Start Scan</button>
+                    <button onClick={() => {wsCtx?.startScan()}} className={`cursor-pointer absolute left-0 font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl hover:bg-neutral-400 transition duration-100 active:bg-neutral-200 ${wsCtx?.status.current === 'live' ? 'flex' : 'invisible'}`}>Start Scan</button>
                     <button onClick={() => {wsCtx?.dispatch()}} className={`cursor-pointer font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl  hover:bg-neutral-400 transition duration-100 active:bg-neutral-200 ${wsCtx?.status.current === 'live_scanning' ? 'flex' : 'hidden'}`}>Dispatch</button>
                     <button onClick={() => {wsCtx?.recall()}} className={`cursor-pointer font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl  hover:bg-neutral-400 transition duration-100 active:bg-neutral-200 ${wsCtx?.status.current === 'live_scanning' ? 'flex' : 'hidden'}`}>Recall</button>
                     <button onClick={() => {saveScan()}} className={`cursor-pointer font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl  hover:bg-neutral-400 transition duration-100 active:bg-neutral-200 ${wsCtx?.status.current === 'completed' ? 'flex' : 'hidden'}`}>Save Scan</button>
-                    <button onClick={() => {discardScan()}} className={`cursor-pointer font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl  hover:bg-neutral-400 transition duration-100 active:bg-neutral-200 ${wsCtx?.status.current === 'completed' ? 'flex' : 'hidden'}`}>Discard Scan</button>
-                    <button onClick={() => {wsCtx?.endScan()}} className={`cursor-pointer absolute text-black right-0 font-semibold bg-red-400 px-3 py-1 rounded-xl hover:bg-red-500 transition duration-100 active:bg-red-400 ${wsCtx?.status.current === 'live_scanning' ? 'completed' : 'hidden'}`}>End Scan</button>
+                    <button onClick={() => {discardScan()}} className={`cursor-pointer font-semibold text-black bg-neutral-200 px-3 py-1 rounded-xl  hover:bg-neutral-400 transition duration-100 active:bg-neutral-200 ${wsCtx?.status.current === 'completed' ? 'flex' : 'invisible'}`}>Discard Scan</button>
+                    <button onClick={() => {wsCtx?.endScan()}} className={`cursor-pointer absolute text-black right-0 font-semibold bg-red-400 px-3 py-1 rounded-xl hover:bg-red-500 transition duration-100 active:bg-red-400 ${wsCtx?.status.current === 'live_scanning' ? 'completed' : 'invisible'}`}>End Scan</button>
                 </div>
             </section>
         </main>

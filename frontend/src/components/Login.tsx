@@ -41,6 +41,7 @@ export default function NewScan() {
         authCtx?.setAuth(true);
         authCtx?.setUserID(body.user.id);
         authCtx?.setUsername(body.user.username);
+        authCtx?.setListUpToDate(false);
         navigate('/newscan');
     };
 

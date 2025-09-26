@@ -6,14 +6,17 @@ type AuthContextType = {
     userID: string,
     username: string,
     unityID: string,
-    status: boolean;
-    setAuth: React.Dispatch<React.SetStateAction<boolean>>;
-    setUserID: React.Dispatch<React.SetStateAction<string>>;
-    setUsername: React.Dispatch<React.SetStateAction<string>>;
-    setUnityID: React.Dispatch<React.SetStateAction<string>>;
+    status: boolean,
+    listUpToDate: boolean,
+    setAuth: React.Dispatch<React.SetStateAction<boolean>>,
+    setUserID: React.Dispatch<React.SetStateAction<string>>,
+    setUsername: React.Dispatch<React.SetStateAction<string>>,
+    setUnityID: React.Dispatch<React.SetStateAction<string>>,
+    setListUpToDate: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 type UserResponse = {
+    authed: boolean,
     success: boolean;
     userID: string;
     username: string;
@@ -29,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [username, setUsername] = useState('');
     const [unityID, setUnityID] = useState('-1');
     const [status, setStatus] = useState(false)
+    const [listUpToDate, setListUpToDate] = useState(true);
 
     useEffect(() => {
         async function fetchUser() {
@@ -37,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const body: UserResponse = await res.json();
             
             if(body.success)  {
-                setAuth(true);
+                setAuth(body.authed);
                 setUserID(body.userID);
                 setUsername(body.username);
                 setUnityID(body.unityID)
@@ -46,8 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             setStatus(true);
+            setListUpToDate(false);
             console.log(`
-                authed: ${body.success}
+                authed: ${body.authed}
                 userID: ${body.userID}
                 username: ${body.username}
                 unityID: ${body.unityID}
@@ -60,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ authed, userID, username, unityID, status, setAuth, setUserID, setUsername, setUnityID }}>
+        <AuthContext.Provider value={{ authed, userID, username, unityID, status, listUpToDate, setAuth, setUserID, setUsername, setUnityID, setListUpToDate }}>
             {children}
         </AuthContext.Provider>
     )

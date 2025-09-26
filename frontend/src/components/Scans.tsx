@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import ScanRenderer from "./ScanRenderer";
 import { Vector3 } from "three";
 const apiDomain = import.meta.env.VITE_API_DOMAIN;
@@ -16,6 +16,8 @@ type ScanRow = {
 
 export default function Scans() {
     const navigate = useNavigate();
+
+    const scanID = useParams();
 
     const voxelsRef = useRef<Vector3[]>([]);
     const [scanName, setScanName] = useState('');
@@ -40,6 +42,7 @@ export default function Scans() {
             console.log("Scan loaded:\n", body.scan);
 
             const scan = body.scan;
+            voxelsRef.current = [];
             for(let i = 0; i < scan.voxels.length; i+=3) {
                 voxelsRef.current.push(new Vector3(scan.voxels[i], scan.voxels[i + 1], scan.voxels[i + 2] * -1));
             }
@@ -58,7 +61,7 @@ export default function Scans() {
 
         };
         getScan();
-    }, []);
+    }, [scanID]);
 
     const updateVisibility = async () => {
         const res = await fetch(`${apiDomain}/api/scans/update`, {

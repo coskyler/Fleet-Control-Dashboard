@@ -1,4 +1,5 @@
-import { createContext, useState, useRef, type ReactNode, type RefObject } from 'react';
+import { createContext, useContext, useState, useRef, type ReactNode, type RefObject, useEffect } from 'react';
+import { AuthContext } from './AuthContext';
 import { Vector3, Quaternion } from "three";
 const apiDomain = import.meta.env.VITE_API_DOMAIN;
 const wssDomain = import.meta.env.VITE_WSS_DOMAIN;
@@ -14,7 +15,8 @@ type WsContextType = {
     startScan: () => void,
     dispatch: () => void,
     recall: () => void,
-    endScan: () => void
+    endScan: () => void,
+    setTick: React.Dispatch<React.SetStateAction<number>>;
 }
 
 type Status = 'uninitialized' | 'connecting' | 'live' | 'live_scanning' | 'disconnected' | 'completed';
@@ -39,6 +41,8 @@ type IncomingVoxelData = { x: number, y: number, z: number };
 export const WsContext = createContext<WsContextType | null>(null);
 
 export function WsProvider({ children }: { children: ReactNode }) {
+    const authCtx = useContext(AuthContext);
+
     const wsRef = useRef<WebSocket | null>(null);
 
     const voxelSize = useRef(1);
@@ -48,6 +52,12 @@ export function WsProvider({ children }: { children: ReactNode }) {
     const scanName = useRef('');
 
     const [tick, setTick] = useState(0);
+
+    useEffect(() => {
+        if(authCtx?.authed === false) {
+            wsRef.current = null;
+        }
+    }, [authCtx?.authed]);
 
     const openWs = async (unityCode: string, newScanName: string) => {
         console.log("Beep beep attemping to start scan:");
@@ -132,8 +142,9 @@ export function WsProvider({ children }: { children: ReactNode }) {
     }
 
     const startScan = () => {
-        wsRef.current?.send('start');
+        wsRef.current?.send(JSON.stringify({ message: 'start' }));
         status.current = 'live_scanning';
+        setTick((prev) => prev + 1);
     };
 
     const dispatch = () => {
@@ -149,7 +160,7 @@ export function WsProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <WsContext.Provider value={{ scanName, voxelSize, voxels, drones, status, tick, openWs, startScan, dispatch, recall, endScan }}>
+        <WsContext.Provider value={{ scanName, voxelSize, voxels, drones, status, tick, openWs, startScan, dispatch, recall, endScan, setTick }}>
             {children}
         </WsContext.Provider>
     )

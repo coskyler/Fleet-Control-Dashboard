@@ -5,6 +5,7 @@ import NewScan from './components/NewScan';
 import Scans from './components/Scans';
 import Login from './components/Login';
 import Signup from './components/Signup';
+import Spectate from './components/Spectate';
 
 function App() {
   const location = useLocation();
@@ -21,6 +22,7 @@ function App() {
           <Route path="/scans/:scanID" element = {<Scans />} />
           <Route path="/login" element = {<Login />} />
           <Route path="/signup" element = {<Signup />} />
+          <Route path="/spectate" element = {<Spectate />} />
         </Routes>
       </div>
     </div>

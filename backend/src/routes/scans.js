@@ -135,8 +135,25 @@ router.put('/update', async (req, res) => {
 });
 
 //get scans list
-router.get('/list', (req, res) => {
+router.get('/list', async (req, res) => {
+    let uid = req.session.userID;
+    if(!uid) return res.status(401).json({ success: false, message: 'Not authorized' });
 
+    try {
+        const rows = await query(
+            `SELECT scan_id, name, created_at
+            FROM scans
+            WHERE user_id = $1
+            ORDER BY created_at DESC
+            LIMIT 50`,
+            [uid]
+        );
+
+        return res.json({ success: true, rows: rows });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ success: false, message: 'Database error' });
+    }
 });
 
 export default router;

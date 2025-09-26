@@ -157,16 +157,17 @@ router.post('/logout', (req, res) => {
 
 //get info
 router.get('/me', (req, res) => {
-    if(!req.session || !req.session.userID)
-        return res.status(401).json({ success: false, message: 'Not logged in'});
-
+    const userID = req.session.userID || '-1';
+    const username = req.session.username || '';
     const unityID = req.session.unityID || '-1';
+    const authed = req.session.userID ? true : false;
 
     return res.json({
         success: true,
-        userID: req.session.userID,
-        username: req.session.username,
-        unityID: unityID
+        userID: userID,
+        username: username,
+        unityID: unityID,
+        authed: authed
     })
     
 });
