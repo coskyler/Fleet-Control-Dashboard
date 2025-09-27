@@ -10,6 +10,7 @@ export default function SignUp() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [verifyPassword, setVerifyPassword] = useState('');
+    const [errMsg, setErrMsg] = useState('');
 
     const cleanUsername = (e: React.ChangeEvent<HTMLInputElement>) => {
         const cleaned = e.target.value
@@ -23,7 +24,7 @@ export default function SignUp() {
 
     const signUp = async () => {
         if (password !== verifyPassword) {
-            alert("Passwords do not match!");
+            setErrMsg("Passwords do not match");
             return;
         }
         
@@ -40,6 +41,7 @@ export default function SignUp() {
 
         if(!body.success) {
             console.log('Signup error: ' + body.message);
+            setErrMsg(body.message);
             return;
         }
 
@@ -50,7 +52,7 @@ export default function SignUp() {
     };
 
     return (
-        <main className="h-full flex flex-col justify-center items-center bg-neutral-800 p-6 text-white">
+        <main className="h-full flex flex-col justify-center items-center bg-transparent bg-neutral-800 p-6 text-white">
             <h1 className="text-3xl mb-8">Sign Up</h1>
             <div className="w-full max-w-150 bg-neutral-700 rounded-3xl overflow-hidden">
                 <div className="flex">
@@ -64,7 +66,7 @@ export default function SignUp() {
                         className="flex-1 px-6 placeholder:text-neutral-400 outline-none"
                     />
                 </div>
-                <div className="h-0.5 bg-neutral-800" />
+                <div className="h-[2px] bg-neutral-800" />
                 <div className="flex">
                     <div className="w-1/4 bg-neutral-600 px-6 pb-3 pt-3">Password</div>
                     <input
@@ -74,7 +76,7 @@ export default function SignUp() {
                         className="flex-1 px-6 placeholder:text-neutral-400 outline-none"
                     />
                 </div>
-                <div className="h-0.5 bg-neutral-800" />
+                <div className="h-[2px] bg-neutral-800" />
                 <div className="flex">
                     <div className="w-1/4 bg-neutral-600 px-6 pb-3 pt-3">Verify</div>
                     <input
@@ -92,6 +94,8 @@ export default function SignUp() {
             >
                 Sign Up
             </button>
+
+            <span className="text-[18px] mb-8 h-[18px]">{errMsg}</span>
         </main>
     );
 }

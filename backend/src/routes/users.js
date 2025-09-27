@@ -24,10 +24,17 @@ router.post('/create', async (req, res) => {
             .trim() //remove leading and trailing spaces
             .slice(0, 50); //limit to 50 chars
 
-    if (validated !== username || validated.length < 3) {
+    if (validated !== username) {
         return res.status(400).json({
             success: false,
             message: 'Invalid username'
+        });
+    }
+
+    if (validated.length < 3) {
+        return res.status(400).json({
+            success: false,
+            message: 'Username must be at least 3 characters'
         });
     }
 

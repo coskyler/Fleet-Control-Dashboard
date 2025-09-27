@@ -6,6 +6,7 @@ export default function Spectate() {
     const [mapName, setMapName] = useState('');
     const [unityCode, setUnityCode] = useState('');
     const [status, setStatus] = useState('Idle');
+    const [errMsg, setErrMsg] = useState('');
 
     const wsCtx = useContext(WsContext);
     
@@ -32,15 +33,16 @@ export default function Spectate() {
         if(status === 'Connecting' && wsCtx?.status.current === 'live') {
             navigate("/dashboard");
         }
+        if(status === 'Connecting') setErrMsg("Invalid Fleet Code");
         setStatus('Idle');
     }, [wsCtx]);
 
     return(
-        <main className="h-full flex flex-col justify-center items-center bg-neutral-800 p-6 text-white">
+        <main className="h-full flex flex-col justify-center items-center bg-transparent bg-neutral-800 p-6 text-white">
             <h1 className="text-3xl mb-8">Spectate Scan</h1>
             <div className="w-full max-w-150 bg-neutral-700 rounded-3xl overflow-hidden">
                 <div className="flex">
-                    <div className="w-1/4 bg-neutral-600 px-6 pb-3 pt-3">Unity Code</div>
+                    <div className="w-1/4 bg-neutral-600 px-6 pb-3 pt-3">Fleet Code</div>
                     <input type="text"
                         placeholder="5 characters"
                         maxLength={5}
@@ -51,6 +53,7 @@ export default function Spectate() {
                 </div>
             </div>
             <button onClick={connectWebsocket} className={`cursor-pointer mb-6 bg-neutral-200 p-2 rounded-xl mt-6 text-black font-semibold hover:bg-neutral-400 transition duration-100 active:bg-neutral-200 ${unityCode.length === 5 ? "visible" : "invisible"}`}>Connect</button>
+            <span className="text-[18px] mb-8 h-[18px]">{errMsg}</span>
         </main>
     );
 }

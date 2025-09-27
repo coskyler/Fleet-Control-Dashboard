@@ -81,7 +81,7 @@ export default function Scans() {
     };
 
     return  (
-        <main className="h-full flex flex-col bg-neutral-800 p-6 text-white">
+        <main className="h-full flex flex-col bg-transparent bg-neutral-800 p-6 text-white">
             <section className="flex justify-between items-end">
                 <h1 className="text-3xl mb-2">{scanName}</h1>
                 <h2 className="text-neutral-200 mb-2">Owner: {scanOwner}</h2>
@@ -93,7 +93,7 @@ export default function Scans() {
                     <button onClick={updateVisibility} className={`${visibility ? 'text-black bg-neutral-200 hover:bg-neutral-400 active:bg-neutral-200' : 'text-white bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-700'} min-w-[75px] cursor-pointer font-semibold px-2 rounded-xl transition duration-100`}>{visibility ? 'Public' : 'Private'}</button>
                 </div>
             </section>
-            <section className="flex-1 flex bg-neutral-700 rounded-xl">
+            <section className="flex-1 flex bg-neutral-800/65 rounded-xl">
                 <ScanRenderer voxelsRef={voxelsRef}/>
             </section>
         </main>

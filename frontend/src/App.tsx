@@ -6,6 +6,7 @@ import Scans from './components/Scans';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Spectate from './components/Spectate';
+import Beams from './components/Beams';
 
 function App() {
   const location = useLocation();
@@ -16,6 +17,19 @@ function App() {
       {!hideSidebar && <Sidebar />}
 
       <div className="flex-1 h-full">
+        <div className="absolute inset-0 -z-10 bg-black"/>
+        <div className="absolute inset-0 -z-10 opacity-50">
+            <Beams
+                beamWidth={2}
+                beamHeight={15}
+                beamNumber={12}
+                lightColor="#ffffff"
+                speed={2}
+                noiseIntensity={1.75}
+                scale={0.2}
+                rotation={20}
+            />
+        </div>
         <Routes>
           <Route path="/" element={<Navigate to="/newscan" replace />} />
 

@@ -10,6 +10,7 @@ export default function NewScan() {
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [errMsg, setErrMsg] = useState('');
 
     const cleanUsername = (e: React.ChangeEvent<HTMLInputElement>) => {
         const cleaned = e.target.value
@@ -35,6 +36,7 @@ export default function NewScan() {
 
         if(!body.success) {
             console.log('Login error: ' + body.message);
+            setErrMsg(body.message);
             return;
         }
 
@@ -46,7 +48,7 @@ export default function NewScan() {
     };
 
     return(
-        <main className="h-full flex flex-col justify-center items-center bg-neutral-800 p-6 text-white">
+        <main className="h-full flex flex-col justify-center items-center bg-transparent bg-neutral-800 p-6 text-white">
             <h1 className="text-3xl mb-8">Log In</h1>
             <div className="w-full max-w-150 bg-neutral-700 rounded-3xl overflow-hidden">
                 <div className="flex">
@@ -60,7 +62,7 @@ export default function NewScan() {
                         className ="flex-1 px-6 placeholder:text-neutral-400 outline-none"
                     />
                 </div>
-                <div className="h-0.5 bg-neutral-800">
+                <div className="h-[2px] bg-neutral-800">
                 </div>
                 <div className="flex">
                     <div className="w-1/4 bg-neutral-600 px-6 pb-3 pt-3">Password</div>
@@ -73,6 +75,7 @@ export default function NewScan() {
                 </div>
             </div>
             <button onClick={signIn} className={`cursor-pointer mb-6 bg-neutral-200 p-2 rounded-xl mt-6 text-black font-semibold hover:bg-neutral-400 transition duration-100 active:bg-neutral-200`}>Log In</button>
+            <span className="text-[18px] mb-8 h-[18px]">{errMsg}</span>
         </main>
     );
 }

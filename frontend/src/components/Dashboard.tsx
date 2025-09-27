@@ -100,14 +100,14 @@ export default function Dashboard() {
     console.log('\n', wsCtx?.voxels.current);
 
     return  (
-        <main className="h-full flex flex-col bg-neutral-800 p-6 text-white">
+        <main className="h-full flex flex-col bg-neutral-800 bg-transparent p-6 text-white">
             <h1 className="text-3xl mb-4">{wsCtx?.scanName.current ? wsCtx?.scanName.current : "Untitled Scan"}</h1>
             
             <section className="flex-1 flex min-h-0">
                 <div className="h-full flex flex-col min-h-0">
                     <aside className="flex flex-col flex-1 min-h-0">
                         <span className="block text-[20px] mb-2 font-semibold">Fleet</span>
-                        <div className="w-64 bg-neutral-700 rounded-xl mr-2 p-1 flex flex-col gap-1 overflow-y-auto flex-1 min-h-0 my-scrollbar">
+                        <div className="w-64 bg-neutral-800/65 rounded-xl mr-2 p-1 flex flex-col gap-1 overflow-y-auto flex-1 min-h-0 my-scrollbar">
                             {rows.map((row, i) => (
                                 <DroneRow key={i} droneName={row.name} dronePos={row.pos}></DroneRow>
                             ))}
@@ -115,7 +115,7 @@ export default function Dashboard() {
                     </aside>
                 </div>
             
-                <div className="flex-1 bg-neutral-700 rounded-xl min-h-0">
+                <div className="flex-1 bg-neutral-800/65 rounded-xl min-h-0">
                     <ScanRenderer voxelsRef={wsCtx?.voxels} dronesRef={wsCtx?.drones} voxelSize={wsCtx?.voxelSize.current}/>
                 </div>
             </section>
