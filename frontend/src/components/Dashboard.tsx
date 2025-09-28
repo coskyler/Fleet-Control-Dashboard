@@ -4,7 +4,7 @@ import { AuthContext } from '../contexts/AuthContext';
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DroneRow from './DroneRow';
-import { Vector3 } from 'three';
+
 const apiDomain = import.meta.env.VITE_API_DOMAIN;
 
 export default function Dashboard() {
@@ -46,13 +46,13 @@ export default function Dashboard() {
         const tempRows = [...rows];
         
         if(rows.length === 0) {
-            for(const [k, v] of wsCtx?.drones.current) {
+            for(const v of wsCtx?.drones.current.values()) {
                     tempRows.push({ name: v.name, pos: v.pos });
 
             }
         }
         else {
-            for(const [k, v] of wsCtx?.drones.current) {
+            for(const v of wsCtx?.drones.current.values()) {
                 for(const row of tempRows) {
                     if(row.name === v.name) {
                         row.pos = v.pos;

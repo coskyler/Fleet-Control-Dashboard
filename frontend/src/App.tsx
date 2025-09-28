@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import NewScan from './components/NewScan';
@@ -9,7 +9,6 @@ import Spectate from './components/Spectate';
 import Beams from './components/Beams';
 
 function App() {
-  const location = useLocation();
   const hideSidebar = false //location.pathname === "/login";
 
   return (

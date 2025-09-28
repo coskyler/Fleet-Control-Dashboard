@@ -3,7 +3,7 @@ import { WsContext } from '../contexts/ScanWsContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Spectate() {
-    const [mapName, setMapName] = useState('');
+    const [mapName] = useState('');
     const [unityCode, setUnityCode] = useState('');
     const [status, setStatus] = useState('Idle');
     const [errMsg, setErrMsg] = useState('');

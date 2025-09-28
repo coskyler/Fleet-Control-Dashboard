@@ -4,16 +4,6 @@ import ScanRenderer from "./ScanRenderer";
 import { Vector3 } from "three";
 const apiDomain = import.meta.env.VITE_API_DOMAIN;
 
-type ScanRow = {
-    scan_id: number;
-    user_id: number;
-    name: string;
-    created_at: string;
-    voxels: string;
-    username: string;
-    public: boolean
-};
-
 export default function Scans() {
     const navigate = useNavigate();
 

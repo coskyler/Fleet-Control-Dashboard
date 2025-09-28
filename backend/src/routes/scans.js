@@ -127,6 +127,7 @@ router.put('/update', async (req, res) => {
             'UPDATE scans SET "public" = $1 WHERE user_id = $2 AND scan_id = $3',
             [visibility, uid, scanID]
         );
+        if(row === undefined) return res.status(400).json({ success: false, message: 'Not authorized'});
         return res.status(200).json({ success: true, message: 'Visibility updated' });
     } catch (e) {
         console.error(e);

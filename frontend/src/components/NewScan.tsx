@@ -2,7 +2,6 @@ import { useState, useContext, useEffect } from 'react';
 import { WsContext } from '../contexts/ScanWsContext';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
-import Beams from './Beams.tsx';
 
 export default function NewScan() {
     const [mapName, setMapName] = useState('');

@@ -69,7 +69,7 @@ export default function Sidebar() {
             <div className={`mb-4 ${authCtx?.authed === true ? "flex flex-col flex-1 min-h-0" : "hidden"}`}>
                 <span className={`block text-[16px] mb-2 font-semibold`}>Scan History</span>
                 <div className={`flex flex-col gap-2 overflow-y-auto flex-1 min-h-0 my-scrollbar`}>
-                    {rows.map((row, i) => (
+                    {rows.map((row) => (
                         <SideBarRow key={row.scan_id} scanName={row.name} scanDateTime={row.created_at} scanLink={`/scans/${row.scan_id}`}></SideBarRow>
                     ))}
                 </div>

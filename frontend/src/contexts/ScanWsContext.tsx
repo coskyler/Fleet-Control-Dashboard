@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useRef, type ReactNode, type RefObject, useEffect } from 'react';
 import { AuthContext } from './AuthContext';
 import { Vector3, Quaternion } from "three";
-const apiDomain = import.meta.env.VITE_API_DOMAIN;
 const wssDomain = import.meta.env.VITE_WSS_DOMAIN;
 
 type WsContextType = {
