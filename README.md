@@ -12,7 +12,8 @@ Built on a custom **fan-out streaming model** with WebSockets and Redis Streams.
 **Supports Multiple Spectators**  
 ![Spectating Demo](media/FCDSpectateDemo.gif)  
 
-See it yourself: [Cave Scan Demo](https://fleetcontrol.coskyler.com/scans/8)
+**See it yourself!**  
+[Cave Scan Demo](https://fleetcontrol.coskyler.com/scans/8)
 
 ## Features
 **Live control & spectator mode** - operators control fleets in real time while others can spectate<br>
