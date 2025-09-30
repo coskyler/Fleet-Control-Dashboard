@@ -23,5 +23,5 @@ Built on a custom **fan-out streaming model** with WebSockets and Redis Streams.
 **User accounts & sessions** - secure authentication
 
 ## Tech Stack
-**Backend:** Javascript, Node.js, Express, WebSockets, Redis, Postgres<br>
+**Backend:** Javascript, Node.js, Express, WebSockets, Redis, Postgres, Docker<br>
 **Frontend:** Typescript, React, Three.js
