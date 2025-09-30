@@ -1,16 +1,19 @@
 # Fleet Control Dashboard
 
-A web app for managing scans from autonomous fleets (e.g. drones).
-Users can log in, connect scan devices (via Unity), and manage stored scan data.
-The system maintains **two WebSocket connections** for real-time interaction between the Unity client and the dashboard.
+A real-time dashboard for managing autonomous drone fleets.  
+Compatible with [Autonomous Indoor Drone Navigation](https://github.com/coskyler/Autonomous-Indoor-Drone-Navigation).
 
-🚧 **Status:** In development  
+Built on a custom **fan-out streaming model** with WebSockets and Redis Streams.
 
-See [AIDN – Autonomous Indoor Drone Navigation](https://github.com/coskyler/AIDN-Drone-Navigation)
+Example scan: [View Scan #7](https://fleetcontrol.coskyler.com/scans/7)
 
 ## Features
-- User authentication and session handling (Redis)
-- Real-time Unity scan streaming (dual WebSockets)
-- Persistent storage and management of scan data
-- Backend: Node.js, Express.js, PostgreSQL, Redis
-- Frontend: React, Three.js
+**Live control & spectator mode** - operators control fleets in real time while others can spectate
+**Reliable streaming** - WebSocket reconnection logic with full scan history
+**Persistent storage** - saved scans can be made public and are accessible anytime
+**3D rendering** - optimized with GPU instancing
+**User accounts & sessions** - secure authentication
+
+## Tech Stack
+**Backend:** Node.js, Express, WebSockets, Redis, Postgres  
+**Frontend:** Typescript, React, Three.js
