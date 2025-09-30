@@ -5,7 +5,14 @@ Compatible with [Autonomous Indoor Drone Navigation](https://github.com/coskyler
 
 Built on a custom **fan-out streaming model** with WebSockets and Redis Streams.
 
-Example scan: [View Scan #7](https://fleetcontrol.coskyler.com/scans/7)
+## Gallery
+**Scanning Demo**  
+![Scanning Demo](media/FCDDemo.gif)  
+
+**Supports Multiple Spectators**  
+![Spectating Demo](media/FCDSpectateDemo.gif)  
+
+See it yourself: [Cave Scan Demo](https://fleetcontrol.coskyler.com/scans/8)
 
 ## Features
 **Live control & spectator mode** - operators control fleets in real time while others can spectate<br>
@@ -15,5 +22,5 @@ Example scan: [View Scan #7](https://fleetcontrol.coskyler.com/scans/7)
 **User accounts & sessions** - secure authentication
 
 ## Tech Stack
-**Backend:** Node.js, Express, WebSockets, Redis, Postgres<br>
+**Backend:** Javascript, Node.js, Express, WebSockets, Redis, Postgres<br>
 **Frontend:** Typescript, React, Three.js
